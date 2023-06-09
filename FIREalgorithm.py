@@ -65,8 +65,9 @@ def FIRE(lattice: springlattice.SpringLattice, dt=0.01, dt_max=0.1, convergence_
         # algorithm, but it seems to be good
         v[np.sum(F * v, axis=1) < 0, :] = 0
 
-        should_plot = False
-        if should_plot:
+        should_plot = True
+        if should_plot and i % 10 == 0:
+            print(lattice.calculate_forces()[0,:])
             fig: Figure = plt.figure()
             ax: Axes3D = fig.add_subplot(111, projection='3d')
             ax.scatter3D(lattice.dots[:, 0], lattice.dots[:, 1], lattice.dots[:, 2])

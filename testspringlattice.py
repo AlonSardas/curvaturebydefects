@@ -67,8 +67,8 @@ def test_simple_triangles():
     springs_constants = 20 * np.ones(springs.shape)
     # springs_constants[1, 2] = 0
     # springs_constants[3, 1] = 0
-    springs_constants[0, 1] = 0
-    springs_constants[2, 0] = 0
+    # springs_constants[0, 1] = 0
+    # springs_constants[2, 0] = 0
 
     lattice = springlattice.SpringLattice(dots, springs, springs_constants, 1)
 
@@ -85,6 +85,22 @@ def test_simple_triangles():
     plt.show()
 
 
+def test_triangular_lattice():
+    lattice = springlattice.create_triangular_lattice(5, 7)
+
+    print(lattice.dots[:, :2])
+
+    print(lattice.calculate_forces())
+    FIREalgorithm.FIRE(lattice)
+    print(lattice.calculate_forces())
+
+    fig: Figure = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection='3d')
+    ax.plot(lattice.dots[:, 0], lattice.dots[:, 1], lattice.dots[:, 2], '.')
+    set_axis_scaled(ax)
+    plt.show()
+
+
 def set_axis_scaled(ax: Axes3D):
     max_lim = max(ax.get_xlim()[1], ax.get_ylim()[1], ax.get_zlim()[1])
     min_lim = min(ax.get_xlim()[0], ax.get_ylim()[0], ax.get_zlim()[0])
@@ -97,7 +113,8 @@ def main():
     # lattice = create_simple_test_lattice()
     # lattice.calculate_forces()
     # test_relaxation()
-    test_simple_triangles()
+    # test_simple_triangles()
+    test_triangular_lattice()
 
 
 if __name__ == '__main__':

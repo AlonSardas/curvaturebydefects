@@ -5,15 +5,16 @@ See doc at:
 https://hoomd-blue.readthedocs.io/en/latest/module-md-minimize.html
 https://hoomd-blue.readthedocs.io/en/latest/howto/molecular.html
 """
-import hoomd
-from hoomd import md
 import gsd.hoomd
+import hoomd
+import numpy as np
+from hoomd import md
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
-import numpy as np
 
-from testspringlattice import set_axis_scaled
+import plotutils
+from latticegenerator import TriangularLatticeGenerator, calc_metric_curvature_triangular_lattice
 
 
 def harmonic_example():
@@ -93,7 +94,7 @@ def test_simple():
     sim.create_state_from_gsd(filename="molecular.gsd")
 
     # Use FIRE as integrator
-    fire = md.minimize.FIRE(dt=0.05, force_tol=1e-4, angmom_tol=1e-2, energy_tol=1e-10)
+    fire = md.minimize.FIRE(dt=0.05, force_tol=1e-5, angmom_tol=1e-2, energy_tol=1e-10)
     fire.methods.append(md.methods.NVE(hoomd.filter.All()))
     fire.forces.append(harmonic)
     fire.forces.append(dihedral_periodic)
@@ -110,12 +111,12 @@ def test_simple():
     fig: Figure = plt.figure()
     ax: Axes3D = fig.add_subplot(111, projection="3d")
     ax.plot(dots[:, 0], dots[:, 1], dots[:, 2])
-    set_axis_scaled(ax)
+    plotutils.set_axis_scaled(ax)
     plt.show()
 
 
 def generate_triangular_lattice(
-    nx: int, ny: int, d=1.0, spring_constant=20.0, dihedral_k=2.0
+        nx: int, ny: int, d=1.0, spring_constant=20.0, dihedral_k=2.0
 ):
     N = nx * ny
     dots = np.zeros((N, 3))
@@ -230,23 +231,28 @@ def add_SW_defect(frame, nx, ny, i, j):
 
 
 def test_triangular_lattice():
-    nx, ny = 14, 20
-    frame, harmonic, dihedrals = generate_triangular_lattice(nx, ny)
-    add_SW_defect(frame, nx, ny, 2, 1)
-    add_SW_defect(frame, nx, ny, 10, 5)
-    with gsd.hoomd.open(name="molecular.gsd", mode="w") as f:
-        f.append(frame)
+    nx, ny = 14, 14
+    L0 = 0.5
+    lattice = TriangularLatticeGenerator(nx, ny, d=L0)
+    R = 7.0
+    lattice.set_z_to_sphere(R)
+    print(1/R**2)
+    # lattice.add_SW_defect(2, 1)
+    # lattice.add_inclusion_defect(2, 2)
+    # lattice.add_SW_defect(10, 5)
+    # lattice.add_SW_defect(1, 2)
 
+    frame, harmonic, dihedrals = lattice.frame, lattice.harmonic, lattice.dihedrals
     sim = hoomd.Simulation(device=hoomd.device.CPU(), seed=1)
-    sim.create_state_from_gsd(filename="molecular.gsd")
+    sim.create_state_from_snapshot(frame)
 
     # Use FIRE as integrator
-    fire = md.minimize.FIRE(dt=0.05, force_tol=1e-4, angmom_tol=1e-2, energy_tol=1e-10)
+    fire = md.minimize.FIRE(dt=0.05, force_tol=1e-3, angmom_tol=1e-2, energy_tol=1e-10)
     fire.methods.append(md.methods.NVE(hoomd.filter.All()))
-    print(harmonic)
+    # fire.methods.append(md.methods.ConstantVolume(hoomd.filter.All()))
+    sim.operations.integrator = fire
     fire.forces.append(harmonic)
     fire.forces.append(dihedrals)
-    sim.operations.integrator = fire
 
     snapshot = sim.state.get_snapshot()
 
@@ -254,11 +260,22 @@ def test_triangular_lattice():
     ax: Axes3D = fig.add_subplot(111, projection="3d")
     plot_dots(ax, snapshot)
     plot_bonds(ax, snapshot)
-    set_axis_scaled(ax)
-    ax.set_zlim(-0.5, 0.5)
+    plotutils.set_axis_scaled(ax)
+    plotutils.set_3D_labels(ax)
+    # ax.set_zlim(-0.5, 0.5)
+    # plt.show()
+
+    fig, axes = plt.subplots(2, 2)
+    Ks, g11, g12, g22 = calc_metric_curvature_triangular_lattice(snapshot.particles.position, nx, ny, L0)
+    print(Ks.shape)
+    plotutils.imshow_with_colorbar(fig, axes[0, 0], g11, "g11")
+    plotutils.imshow_with_colorbar(fig, axes[0, 1], g22, "g22")
+    plotutils.imshow_with_colorbar(fig, axes[1, 0], g12, "g12")
+    plotutils.imshow_with_colorbar(fig, axes[1, 1], Ks[3:-3, 3:-3], "K")
+
     plt.show()
 
-    while not (fire.converged):
+    while not fire.converged:
         print("here")
         sim.run(100)
 
@@ -272,8 +289,8 @@ def test_triangular_lattice():
     ax: Axes3D = fig.add_subplot(111, projection="3d")
     plot_dots(ax, snapshot)
     plot_bonds(ax, snapshot)
-    set_axis_scaled(ax)
-    ax.set_zlim(-10, 10)
+    plotutils.set_axis_scaled(ax)
+    # ax.set_zlim(-10, 10)
     plt.show()
 
 

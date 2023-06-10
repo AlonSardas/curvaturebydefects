@@ -5,6 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 import FIREalgorithm
 import springlattice
+from plotutils import set_axis_scaled
 
 
 def create_simple_test_lattice():
@@ -99,14 +100,6 @@ def test_triangular_lattice():
     ax.plot(lattice.dots[:, 0], lattice.dots[:, 1], lattice.dots[:, 2], '.')
     set_axis_scaled(ax)
     plt.show()
-
-
-def set_axis_scaled(ax: Axes3D):
-    max_lim = max(ax.get_xlim()[1], ax.get_ylim()[1], ax.get_zlim()[1])
-    min_lim = min(ax.get_xlim()[0], ax.get_ylim()[0], ax.get_zlim()[0])
-    ax.set_xlim(min_lim, max_lim)
-    ax.set_ylim(min_lim, max_lim)
-    ax.set_zlim(min_lim, max_lim)
 
 
 def main():

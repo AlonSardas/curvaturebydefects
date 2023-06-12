@@ -1,5 +1,5 @@
 """
-Use hoomd package to simulate springs and masses
+Use HOOMD-blue package to simulate springs and masses
 
 See doc at:
 https://hoomd-blue.readthedocs.io/en/latest/module-md-minimize.html
@@ -15,6 +15,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 import plotutils
 from latticegenerator import TriangularLatticeGenerator, calc_metric_curvature_triangular_lattice
+from hoomdlattice import plot_dots, plot_bonds
 
 
 def harmonic_example():
@@ -95,12 +96,12 @@ def test_simple():
 
     # Use FIRE as integrator
     fire = md.minimize.FIRE(dt=0.05, force_tol=1e-5, angmom_tol=1e-2, energy_tol=1e-10)
-    fire.methods.append(md.methods.NVE(hoomd.filter.All()))
+    fire.methods.append(md.methods.ConstantVolume(hoomd.filter.All()))
     fire.forces.append(harmonic)
     fire.forces.append(dihedral_periodic)
     sim.operations.integrator = fire
 
-    while not (fire.converged):
+    while not fire.converged:
         print("here")
         sim.run(100)
 
@@ -178,8 +179,6 @@ def add_bonds_to_frame(nx, ny, frame, spring_constant, d):
 
 
 def add_dihedrals_to_frame(nx, ny, frame, k):
-    indices = np.arange(nx * ny).reshape(ny, nx)
-
     # There are 3 'types' of dihedrals for each triangle. Each triangle has 3
     # vertices with other triangles and we add the dihedral forces to each one
     dihedrals = []
@@ -248,8 +247,7 @@ def test_triangular_lattice():
 
     # Use FIRE as integrator
     fire = md.minimize.FIRE(dt=0.05, force_tol=1e-3, angmom_tol=1e-2, energy_tol=1e-10)
-    fire.methods.append(md.methods.NVE(hoomd.filter.All()))
-    # fire.methods.append(md.methods.ConstantVolume(hoomd.filter.All()))
+    fire.methods.append(md.methods.ConstantVolume(hoomd.filter.All()))
     sim.operations.integrator = fire
     fire.forces.append(harmonic)
     fire.forces.append(dihedrals)
@@ -266,7 +264,7 @@ def test_triangular_lattice():
     # plt.show()
 
     fig, axes = plt.subplots(2, 2)
-    Ks, g11, g12, g22 = calc_metric_curvature_triangular_lattice(snapshot.particles.position, nx, ny, L0)
+    Ks, g11, g12, g22 = calc_metric_curvature_triangular_lattice(snapshot.particles.position, nx, ny)
     print(Ks.shape)
     plotutils.imshow_with_colorbar(fig, axes[0, 0], g11, "g11")
     plotutils.imshow_with_colorbar(fig, axes[0, 1], g22, "g22")
@@ -292,24 +290,6 @@ def test_triangular_lattice():
     plotutils.set_axis_scaled(ax)
     # ax.set_zlim(-10, 10)
     plt.show()
-
-
-def plot_dots(ax: Axes3D, snapshot: hoomd.snapshot.Snapshot):
-    dots = snapshot.particles.position
-    ax.plot(dots[:, 0], dots[:, 1], dots[:, 2], ".")
-
-
-def plot_bonds(ax: Axes3D, snapshot: hoomd.snapshot.Snapshot):
-    dots = snapshot.particles.position
-    bonds = snapshot.bonds.group
-    for bond in bonds:
-        p1, p2 = bond
-        ax.plot(
-            [dots[p1, 0], dots[p2, 0]],
-            [dots[p1, 1], dots[p2, 1]],
-            [dots[p1, 2], dots[p2, 2]],
-            "-r",
-        )
 
 
 def main():

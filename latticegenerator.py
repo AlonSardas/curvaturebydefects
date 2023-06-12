@@ -114,6 +114,9 @@ class TriangularLatticeGenerator(object):
         mean_x = np.mean(self.dots[:, 0])
         mean_y = np.mean(self.dots[:, 1])
         self.dots[:, 2] = np.sqrt(radius ** 2 - (self.dots[:, 0] - mean_x) ** 2 - (self.dots[:, 1] - mean_y) ** 2)
+        if np.any(np.isnan(self.dots)):
+            raise RuntimeError("Got some invalid values for the position, "
+                               "this may happen if the radius of the sphere is too small")
         self.dots[:, 2] -= np.mean(self.dots[:, 2])
 
     def add_SW_defect(self, i, j, should_remove_dihedral=True):
@@ -122,6 +125,11 @@ class TriangularLatticeGenerator(object):
         j_shift = (i + 1) % 2
         frame.bonds.group.remove((indices[i, j], indices[i, j + 1]))
         frame.bonds.group.append((indices[i - 1, j + j_shift], indices[i + 1, j + j_shift]))
+
+        frame.particles.typeid[indices[i, j]] = 1
+        frame.particles.typeid[indices[i, j + 1]] = 1
+        frame.particles.typeid[indices[i - 1, j + j_shift]] = 1
+        frame.particles.typeid[indices[i + 1, j + j_shift]] = 1
 
         if should_remove_dihedral:
             # We remove the dihedral that corresponds to this panel
@@ -136,11 +144,6 @@ class TriangularLatticeGenerator(object):
                 raise RuntimeError("Could not find the dihedral for bond "
                                    f"{indices[i, j]}, {indices[i, j + 1]}")
 
-        frame.particles.typeid[indices[i, j]] = 1
-        frame.particles.typeid[indices[i, j + 1]] = 1
-        frame.particles.typeid[indices[i - 1, j + j_shift]] = 1
-        frame.particles.typeid[indices[i + 1, j + j_shift]] = 1
-
     def add_inclusion_defect(self, i, j):
         frame, nx, ny = self.frame, self.nx, self.ny
         indices = self.indices
@@ -151,7 +154,7 @@ class TriangularLatticeGenerator(object):
 
 
 # noinspection PyPep8Naming
-def calc_metric_curvature_triangular_lattice(dots, nx, ny, L0=1.0):
+def calc_metric_curvature_triangular_lattice(dots, nx, ny):
     indices = np.arange(nx * ny).reshape(ny, nx)
 
     tx = 2 * (nx - 1)

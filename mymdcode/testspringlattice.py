@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-import FIREalgorithm
+from mymdcode import FIREalgorithm
 import springlattice
 from plotutils import set_axis_scaled
 

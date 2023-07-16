@@ -1,6 +1,9 @@
 import gsd.hoomd
+import hoomd
 import numpy as np
 from hoomd import md
+
+from hoomdlattice import Lattice
 
 
 # noinspection PyPep8Naming
@@ -19,6 +22,7 @@ class TriangularLatticeGenerator(object):
         dots[indices, 0] = (np.arange(nx) * d)[np.newaxis, :]
         dots[indices[1::2, :], 0] -= d / 2
         self.dots = dots
+        self._center_XY_plane()
 
         frame.particles.N = N
         frame.particles.position = dots
@@ -28,14 +32,28 @@ class TriangularLatticeGenerator(object):
         self.harmonic = self._add_bonds_to_frame(spring_constant, d, inclusion_d)
         self.dihedrals = self._add_dihedrals_to_frame(dihedral_k)
 
+    def _duplicate_frame(self):
+        new = gsd.hoomd.Frame()
+        old = self.frame
+        new.particles = old.particles
+        new.particles.position = self.dots.copy()
+        new.bonds = old.bonds
+        new.dihedrals = old.dihedrals
+        new.configuration.box = old.configuration.box
+        return new
+
+    def generate_lattice(self) -> Lattice:
+        return Lattice(self._duplicate_frame(), self.harmonic, self.dihedrals)
+
     def _add_bonds_to_frame(self, spring_constant, d, inclusion_d):
         frame = self.frame
         indices = self.indices
         nx, ny = self.nx, self.ny
 
-        frame.bonds.types = ["basic", "inclusion"]
+        frame.bonds.types = ["basic", "inclusion", "SW"]
         harmonic = md.bond.Harmonic()
         harmonic.params["basic"] = dict(k=spring_constant, r0=d)
+        harmonic.params["SW"] = dict(k=spring_constant, r0=d)
         harmonic.params["inclusion"] = dict(k=spring_constant, r0=inclusion_d)
 
         bonds = set()
@@ -119,12 +137,17 @@ class TriangularLatticeGenerator(object):
                                "this may happen if the radius of the sphere is too small")
         self.dots[:, 2] -= np.mean(self.dots[:, 2])
 
+    def _center_XY_plane(self):
+        self.dots[:, 0] -= np.mean(self.dots[:, 0])
+        self.dots[:, 1] -= np.mean(self.dots[:, 1])
+
     def add_SW_defect(self, i, j, should_remove_dihedral=True):
         frame, nx, ny = self.frame, self.nx, self.ny
         indices = self.indices
         j_shift = (i + 1) % 2
-        frame.bonds.group.remove((indices[i, j], indices[i, j + 1]))
-        frame.bonds.group.append((indices[i - 1, j + j_shift], indices[i + 1, j + j_shift]))
+        bond_index = frame.bonds.group.index((indices[i, j], indices[i, j + 1]))
+        frame.bonds.group[bond_index] = (indices[i - 1, j + j_shift], indices[i + 1, j + j_shift])
+        frame.bonds.typeid[bond_index] = 2
 
         frame.particles.typeid[indices[i, j]] = 1
         frame.particles.typeid[indices[i, j + 1]] = 1

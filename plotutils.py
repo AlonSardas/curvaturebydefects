@@ -1,11 +1,12 @@
 import fractions
-
 import numpy as np
+from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.image import AxesImage
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
+from typing import Tuple
 
 
 def set_pi_ticks(ax, axis, pi_range=(0, 1), divisions=4):
@@ -43,6 +44,12 @@ def set_axis_scaled(ax: Axes3D):
     ax.set_xlim(min_lim, max_lim)
     ax.set_ylim(min_lim, max_lim)
     ax.set_zlim(min_lim, max_lim)
+
+
+def create_axes_from_top() -> Tuple[Figure, Axes3D]:
+    fig: Figure = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection='3d', azim=-90, elev=90)
+    return fig, ax
 
 
 def create_colorbar(fig: Figure, ax: Axes, im):

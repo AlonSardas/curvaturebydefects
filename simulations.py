@@ -102,10 +102,11 @@ def cone_by_traceless_quadrupoles():
 
 
 def sphere_by_traceless_quadrupoles():
-    nx, ny = 70, 80
+    nx, ny = 40, 50
     # lattice = TriangularLatticeGenerator(nx, ny)
     # lattice.set_z_to_noise()
     lattice = create_lattice_for_sphere_by_traceless_quadrupoles(nx, ny, defects_x_jumps=6, factor=0.0001)
+    lattice.set_dihedral_k(0.5)
     lattice.set_z_to_sphere(radius=2000)
 
     """
@@ -131,7 +132,11 @@ def sphere_by_traceless_quadrupoles():
                 print("warning: ", e.args)
     """
 
-    snapshot = do_relaxation(lattice.frame, lattice.harmonic, lattice.dihedrals, force_tol=1e-5)
+    # snapshot = do_relaxation(lattice.frame, lattice.harmonic, lattice.dihedrals, force_tol=1e-5)
+    lattice = lattice.generate_lattice()
+    lattice.do_relaxation(dt=0.1)
+
+    snapshot = lattice.sim.state.get_snapshot()
     fig: Figure = plt.figure()
     ax: Axes3D = fig.add_subplot(111, projection="3d")
     hoomdlattice.plot_dots(ax, snapshot)
@@ -228,6 +233,45 @@ def plot_sphere_by_traceless_quadrupoles():
     fig.tight_layout()
     fig.savefig(os.path.join(FIGURE_PATH, "sphere-by-traceless-Q.png"))
     plt.show()
+
+
+def test_SW_in_3D():
+    nx, ny = 20, 20
+    lattice_gen = TriangularLatticeGenerator(nx, ny)
+
+    x = nx // 2
+    y = ny // 2
+    print(f"Putting SW defect at {x},{y}")
+    # lattice_gen.add_SW_defect(y, x//2)
+    lattice_gen.add_SW_defect(y, x)
+    # lattice_gen.add_SW_defect(y, x*3//2)
+
+    lattice_gen.set_z_to_noise()
+
+    lattice = lattice_gen.generate_lattice()
+    lattice.do_relaxation()
+
+    fig: Figure = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection="3d")
+    # lattice.plot_bonds(ax)
+    plotutils.set_axis_scaled(ax)
+
+    nx, ny = 11, 11
+    lattice_gen = TriangularLatticeGenerator(nx, ny, dihedral_k=2.0)
+    for i in range(0, nx-1):
+        lattice_gen.add_SW_defect(ny//2, i, should_fix_dihedral=True)
+    lattice_gen.set_z_to_noise()
+    # lattice_gen.set_z_to_sphere()
+    lattice = lattice_gen.generate_lattice()
+    lattice.do_relaxation()
+    fig: Figure = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection="3d")
+    lattice.plot_bonds(ax)
+    plotutils.set_axis_scaled(ax)
+
+    plt.show()
+
+
 
 
 def analyze_single_SW_displacement():
@@ -334,11 +378,12 @@ def plot_single_SW():
 
 def main():
     # cone_by_traceless_quadrupoles()
-    # sphere_by_traceless_quadrupoles()
-    plot_sphere_by_traceless_quadrupoles()
+    sphere_by_traceless_quadrupoles()
+    # plot_sphere_by_traceless_quadrupoles()
     # sphere_by_inclusions()
     # analyze_single_SW_displacement()
     # plot_single_SW()
+    # test_SW_in_3D()
 
 
 if __name__ == "__main__":

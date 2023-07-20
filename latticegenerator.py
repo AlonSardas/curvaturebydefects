@@ -20,7 +20,7 @@ class TriangularLatticeGenerator(object):
         self.indices = indices
         dots[indices, 1] = (np.arange(ny) * d * np.sqrt(3) / 2)[:, np.newaxis]
         dots[indices, 0] = (np.arange(nx) * d)[np.newaxis, :]
-        dots[indices[1::2, :], 0] -= d / 2
+        dots[indices[1::2, :], 0] += d / 2
         self.dots = dots
         self._center_XY_plane()
 
@@ -69,7 +69,7 @@ class TriangularLatticeGenerator(object):
             bonds.add((p1, p2))
 
         for i in range(ny):
-            j_shift = (i - 1) % 2
+            j_shift = i % 2
             for j in range(nx):
                 add_bond(i, j, i, j + 1)
                 add_bond(i, j, i + 1, j - 1 + j_shift)
@@ -124,6 +124,9 @@ class TriangularLatticeGenerator(object):
 
         return dihedral_periodic
 
+    def set_dihedral_k(self, dihedral_k:float):
+        self.dihedrals.params["dihedral-basic"]["k"] = dihedral_k
+
     def set_z_to_noise(self, magnitude=0.05):
         # We add noise in the z axis, to allow out of plane perturbations
         self.dots[:, 2] += self.d * magnitude * (np.random.random(self.N) - 0.5)
@@ -141,31 +144,40 @@ class TriangularLatticeGenerator(object):
         self.dots[:, 0] -= np.mean(self.dots[:, 0])
         self.dots[:, 1] -= np.mean(self.dots[:, 1])
 
-    def add_SW_defect(self, i, j, should_remove_dihedral=True):
+    def add_SW_defect(self, i, j, should_fix_dihedral=True):
         frame, nx, ny = self.frame, self.nx, self.ny
         indices = self.indices
-        j_shift = (i + 1) % 2
-        bond_index = frame.bonds.group.index((indices[i, j], indices[i, j + 1]))
-        frame.bonds.group[bond_index] = (indices[i - 1, j + j_shift], indices[i + 1, j + j_shift])
+        j_shift = i % 2
+        old_index_left = indices[i, j]
+        old_index_right = indices[i, j + 1]
+        new_index_down = indices[i - 1, j + j_shift]
+        new_index_up = indices[i + 1, j + j_shift]
+        bond_index = frame.bonds.group.index((old_index_left, old_index_right))
+        frame.bonds.group[bond_index] = (new_index_down, new_index_up)
         frame.bonds.typeid[bond_index] = 2
 
-        frame.particles.typeid[indices[i, j]] = 1
-        frame.particles.typeid[indices[i, j + 1]] = 1
-        frame.particles.typeid[indices[i - 1, j + j_shift]] = 1
-        frame.particles.typeid[indices[i + 1, j + j_shift]] = 1
+        frame.particles.typeid[old_index_left] = 1
+        frame.particles.typeid[old_index_right] = 1
+        frame.particles.typeid[new_index_up] = 1
+        frame.particles.typeid[new_index_down] = 1
 
-        if should_remove_dihedral:
-            # We remove the dihedral that corresponds to this panel
+        if should_fix_dihedral:
+            # We have 5 dihedrals to fix - one to each of the edges involved
             for d, group in enumerate(frame.dihedrals.group):
                 if {group[1], group[2]} == {indices[i, j], indices[i, j + 1]}:
-                    frame.dihedrals.group.remove(group)
-                    frame.dihedrals.typeid.pop()
-                    frame.dihedrals.N -= 1
+                    frame.dihedrals.group[d] = [group[1], group[0], group[3], group[2]]
 
-                    break
-            else:
-                raise RuntimeError("Could not find the dihedral for bond "
-                                   f"{indices[i, j]}, {indices[i, j + 1]}")
+                elif {group[1], group[2], group[3]} == {old_index_left, new_index_down, old_index_right}:
+                    frame.dihedrals.group[d] = [group[0], group[1], group[2], new_index_up]
+
+                elif {group[1], group[2], group[3]} == {old_index_left, new_index_up, old_index_right}:
+                    frame.dihedrals.group[d] = [group[0], group[1], group[2], new_index_down]
+                
+                elif {group[0], group[1], group[2]} == {old_index_left, new_index_up, old_index_right}:
+                    frame.dihedrals.group[d] = [new_index_down, group[1], group[2], group[3]]
+
+                elif {group[0], group[1], group[2]} == {old_index_left, new_index_down, old_index_right}:
+                    frame.dihedrals.group[d] = [new_index_up, group[1], group[2], group[3]]
 
     def add_inclusion_defect(self, i, j):
         frame, nx, ny = self.frame, self.nx, self.ny

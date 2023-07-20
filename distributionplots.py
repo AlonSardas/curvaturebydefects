@@ -1,5 +1,9 @@
+"""
+Plots to show how the defects should be distributed in order to achieve some Gaussian curvature
+"""
+
 import os.path
-from typing import Callable
+from typing import Callable, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -200,7 +204,7 @@ def _set_arbitrary_units(ax: Axes):
     ax.set_ylabel('y [a.u.]')
 
 
-def _create_fig_ax() -> (Figure, Axes):
+def _create_fig_ax() -> Tuple[Figure, Axes]:
     fig: Figure = plt.figure()
     ax: Axes = fig.subplots()
     return fig, ax

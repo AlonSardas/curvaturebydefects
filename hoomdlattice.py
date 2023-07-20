@@ -34,8 +34,11 @@ class Lattice(object):
         fire.forces.append(harmonic)
         fire.forces.append(dihedrals)
 
+        sim.run(0)  # This is necessary for calculating the energy in the first step
+
         while not fire.converged:
-            print("Fire iteration")
+            print("Fire iteration. "
+                  f"Stretching energy: {harmonic.energy:.6f}, Bending energy: {dihedrals.energy:.6f}")
             sim.run(100)
 
         return sim.state.get_snapshot()

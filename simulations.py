@@ -1,14 +1,13 @@
 import os.path
 
 import numpy as np
-from matplotlib import pyplot as plt, cm
-from matplotlib.colors import LightSource
+from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
 import hoomdlattice
 import plotutils
-from hoomdlattice import do_relaxation
+from hoomdlattice import Lattice, do_relaxation
 from latticegenerator import TriangularLatticeGenerator, calc_metric_curvature_triangular_lattice
 
 FIGURE_PATH = "../Figures/MD-simulations"
@@ -67,10 +66,10 @@ def sphere_by_inclusions():
 
 
 def cone_by_traceless_quadrupoles():
-    nx, ny = 60, 60
-    lattice = TriangularLatticeGenerator(nx, ny)
+    nx, ny = 40, 40
+    lattice_gen = TriangularLatticeGenerator(nx, ny)
     # lattice.set_z_to_noise()
-    lattice.set_z_to_sphere(radius=100)
+    lattice_gen.set_z_to_sphere(radius=100)
 
     defects_jumps = 3
     padding = 0
@@ -80,16 +79,17 @@ def cone_by_traceless_quadrupoles():
             if (x - nx // 2) >= abs(y - ny // 2):
                 print(f"Putting SW at {x},{y}")
                 try:
-                    lattice.add_SW_defect(y, x)
+                    lattice_gen.add_SW_defect(y, x)
                 except RuntimeError as e:
                     print("warning: ", e.args)
 
-    snapshot = do_relaxation(lattice.frame, lattice.harmonic, lattice.dihedrals)
+    lattice = lattice_gen.generate_lattice()
+    snapshot = lattice.do_relaxation()
+
     fig: Figure = plt.figure()
     ax: Axes3D = fig.add_subplot(111, projection="3d")
-    hoomdlattice.plot_dots(ax, snapshot)
-    # hoomdlattice.plot_bonds(ax, snapshot)
-    plotutils.set_axis_scaled(ax)
+    # lattice.plot_dots(ax)
+    lattice.plot_bonds(ax)
     ax.set_zlim(-5, 5)
 
     fig, ax = plt.subplots()
@@ -101,15 +101,7 @@ def cone_by_traceless_quadrupoles():
     plt.show()
 
 
-def sphere_by_traceless_quadrupoles():
-    nx, ny = 40, 50
-    # lattice = TriangularLatticeGenerator(nx, ny)
-    # lattice.set_z_to_noise()
-    lattice = create_lattice_for_sphere_by_traceless_quadrupoles(nx, ny, defects_x_jumps=6, factor=0.0001)
-    lattice.set_dihedral_k(0.5)
-    lattice.set_z_to_sphere(radius=2000)
-
-    """
+def old_generate_sphere_by_traceless_quadrupoles(nx, ny):
     defects_x_jumps = 6
     padding = 1
     factor = 0.0001
@@ -130,35 +122,6 @@ def sphere_by_traceless_quadrupoles():
                 lattice.add_SW_defect(y, x)
             except RuntimeError as e:
                 print("warning: ", e.args)
-    """
-
-    # snapshot = do_relaxation(lattice.frame, lattice.harmonic, lattice.dihedrals, force_tol=1e-5)
-    lattice = lattice.generate_lattice()
-    lattice.do_relaxation(dt=0.1)
-
-    snapshot = lattice.sim.state.get_snapshot()
-    fig: Figure = plt.figure()
-    ax: Axes3D = fig.add_subplot(111, projection="3d")
-    hoomdlattice.plot_dots(ax, snapshot)
-    dots = snapshot.particles.position
-    dots_pos = dots[dots[:, 2] > 0]
-    dots = dots_pos
-    ax.plot(dots[:, 0], dots[:, 1], dots[:, 2], ".")
-
-    # hoomdlattice.plot_bonds(ax, snapshot)
-    plotutils.set_axis_scaled(ax)
-    ax.set_zlim(-5, 5)
-
-    fig, ax = plt.subplots()
-    Ks, g11, g12, g22 = calc_metric_curvature_triangular_lattice(
-        snapshot.particles.position, nx, ny
-    )
-    Ks[Ks < 0] = 0
-    Ks[Ks > 0.001] = 0.0
-    im = plotutils.imshow_with_colorbar(fig, ax, Ks, "K")
-    # im.set_clim(0, 0.01)
-
-    plt.show()
 
 
 def create_lattice_for_sphere_by_traceless_quadrupoles(nx, ny,
@@ -170,8 +133,9 @@ def create_lattice_for_sphere_by_traceless_quadrupoles(nx, ny,
     middle_x = nx // 2
     max_x = nx - padding + 1
     xs_right = np.arange(middle_x, max_x, defects_x_jumps)
+    print(xs_right)
     xs_left = -xs_right[1:] + 2 * middle_x
-    xs = np.append(xs_left[::-1], xs_right) - 1
+    xs = np.append(xs_left[::-1], xs_right)
     print(f"defects at {xs}")
     for x in xs:
         y_defects = round((ny - 2 * padding) * factor * (x - nx / 2) ** 2)
@@ -186,6 +150,34 @@ def create_lattice_for_sphere_by_traceless_quadrupoles(nx, ny,
             y = round(yy)
             print(f"Putting SW at {x_index},{y}")
             lattice_gen.add_SW_defect(y, x_index)
+    return lattice_gen
+
+
+def create_lattice_for_negative_K_SW(nx, ny,
+                                     defects_y_jumps=4,
+                                     padding=1,
+                                     factor=0.0001):
+    lattice_gen = TriangularLatticeGenerator(nx, ny)
+
+    middle_y = ny // 2
+    max_y = ny - padding + 1
+    ys_right = np.arange(middle_y, max_y, defects_y_jumps)
+    ys_left = -ys_right[1:] + 2 * middle_y
+    ys = np.append(ys_left[::-1], ys_right) - 1
+    print(f"defects at {ys}")
+    for y in ys:
+        x_defects = round((nx - 2 * padding) * factor * (y - ny / 2) ** 2)
+        y_index = round(y)
+        if x_defects > nx:
+            raise RuntimeError(
+                "Got more defects than lattice site at column "
+                f"{y_index}, nx={nx}, defects={x_defects}"
+            )
+        print(f"putting in y={y_index}, {x_defects} defects")
+        for xx in np.linspace(padding, nx - padding, int(x_defects) + 2)[1:-1]:
+            x = round(xx)
+            print(f"Putting SW at {y_index},{x}")
+            lattice_gen.add_SW_defect(y_index, x)
     return lattice_gen
 
 
@@ -235,43 +227,13 @@ def plot_sphere_by_traceless_quadrupoles():
     plt.show()
 
 
-def test_SW_in_3D():
-    nx, ny = 20, 20
-    lattice_gen = TriangularLatticeGenerator(nx, ny)
-
-    x = nx // 2
-    y = ny // 2
-    print(f"Putting SW defect at {x},{y}")
-    # lattice_gen.add_SW_defect(y, x//2)
-    lattice_gen.add_SW_defect(y, x)
-    # lattice_gen.add_SW_defect(y, x*3//2)
-
-    lattice_gen.set_z_to_noise()
-
-    lattice = lattice_gen.generate_lattice()
-    lattice.do_relaxation()
-
+def plot_dots(lattice: Lattice, azim=None, elev=None):
     fig: Figure = plt.figure()
-    ax: Axes3D = fig.add_subplot(111, projection="3d")
-    # lattice.plot_bonds(ax)
-    plotutils.set_axis_scaled(ax)
-
-    nx, ny = 11, 11
-    lattice_gen = TriangularLatticeGenerator(nx, ny, dihedral_k=2.0)
-    for i in range(0, nx-1):
-        lattice_gen.add_SW_defect(ny//2, i, should_fix_dihedral=True)
-    lattice_gen.set_z_to_noise()
-    # lattice_gen.set_z_to_sphere()
-    lattice = lattice_gen.generate_lattice()
-    lattice.do_relaxation()
-    fig: Figure = plt.figure()
-    ax: Axes3D = fig.add_subplot(111, projection="3d")
-    lattice.plot_bonds(ax)
-    plotutils.set_axis_scaled(ax)
-
-    plt.show()
-
-
+    ax: Axes3D = fig.add_subplot(111, projection="3d", azim=azim, elev=elev)
+    lattice.plot_dots(ax)
+    plotutils.set_3D_labels(ax)
+    # plotutils.set_axis_scaled(ax)
+    return fig, ax
 
 
 def analyze_single_SW_displacement():
@@ -378,12 +340,11 @@ def plot_single_SW():
 
 def main():
     # cone_by_traceless_quadrupoles()
-    sphere_by_traceless_quadrupoles()
+    # sphere_by_traceless_quadrupoles()
     # plot_sphere_by_traceless_quadrupoles()
     # sphere_by_inclusions()
-    # analyze_single_SW_displacement()
+    analyze_single_SW_displacement()
     # plot_single_SW()
-    # test_SW_in_3D()
 
 
 if __name__ == "__main__":

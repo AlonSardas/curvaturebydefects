@@ -3,9 +3,9 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-from mymdcode import FIREalgorithm
+from latticedefects.mymdcode import FIREalgorithm
 import springlattice
-from plotutils import set_axis_scaled
+from latticedefects.utils.plotutils import set_axis_scaled
 
 
 def create_simple_test_lattice():

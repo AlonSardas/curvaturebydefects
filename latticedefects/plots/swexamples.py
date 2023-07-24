@@ -4,12 +4,12 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-import hoomdlattice
-import plotutils
-from latticegenerator import calc_metric_curvature_triangular_lattice, TriangularLatticeGenerator
+from latticedefects import hoomdlattice, plots
+from latticedefects.utils import plotutils
+from latticedefects.latticegenerator import calc_metric_curvature_triangular_lattice, TriangularLatticeGenerator
 from simulations import create_lattice_for_sphere_by_traceless_quadrupoles, plot_dots, create_lattice_for_negative_K_SW
 
-FIGURE_PATH = "../Figures/MD-simulations"
+FIGURE_PATH = os.path.join(plots.BASE_PATH, "MD-simulations")
 
 
 def plot_frames_from_trajectory(trajectory_file, output_folder):
@@ -122,6 +122,7 @@ def test_SW_line():
     lattice_gen.set_dihedral_k(2.0)
     lattice = lattice_gen.generate_lattice()
     lattice.do_relaxation(force_tol=1e-9)
+    lattice.save_frame(os.path.join(folder, 'medium-bending.gsd'))
     fig: Figure = plt.figure()
     ax: Axes3D = fig.add_subplot(111, projection="3d", azim=33, elev=18)
     lattice.plot_bonds(ax)
@@ -167,8 +168,8 @@ def plot_flat(lattice_gen, filename, box_size):
 
 def main():
     # simulate_sphere_progress()
-    # test_SW_line()
-    plot_negative_curvature()
+    test_SW_line()
+    # plot_negative_curvature()
 
 
 if __name__ == '__main__':

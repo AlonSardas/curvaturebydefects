@@ -1,0 +1,12 @@
+.gitignore
+README.md
+setup.py
+latticedefects/__init__.py
+latticedefects/defectsplot
+latticedefects/hoomdlattice.py
+latticedefects/latticegenerator.py
+latticedefects.egg-info/PKG-INFO
+latticedefects.egg-info/SOURCES.txt
+latticedefects.egg-info/dependency_links.txt
+latticedefects.egg-info/requires.txt
+latticedefects.egg-info/top_level.txt

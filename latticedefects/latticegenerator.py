@@ -1,9 +1,8 @@
 import gsd.hoomd
-import hoomd
 import numpy as np
 from hoomd import md
 
-from hoomdlattice import Lattice
+from latticedefects.hoomdlattice import Lattice
 
 
 # noinspection PyPep8Naming

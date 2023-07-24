@@ -5,10 +5,10 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-import hoomdlattice
-import plotutils
-from hoomdlattice import Lattice, do_relaxation
-from latticegenerator import TriangularLatticeGenerator, calc_metric_curvature_triangular_lattice
+from latticedefects import hoomdlattice
+from latticedefects.utils import plotutils
+from latticedefects.hoomdlattice import Lattice, do_relaxation
+from latticedefects.latticegenerator import TriangularLatticeGenerator, calc_metric_curvature_triangular_lattice
 
 FIGURE_PATH = "../Figures/MD-simulations"
 
@@ -227,7 +227,7 @@ def plot_sphere_by_traceless_quadrupoles():
     plt.show()
 
 
-def plot_dots(lattice: Lattice, azim=None, elev=None):
+def plot_dots(lattice: Lattice, azim, elev):
     fig: Figure = plt.figure()
     ax: Axes3D = fig.add_subplot(111, projection="3d", azim=azim, elev=elev)
     lattice.plot_dots(ax)

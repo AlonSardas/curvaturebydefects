@@ -1,8 +1,10 @@
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
-from latticegenerator import TriangularLatticeGenerator
+from mpl_toolkits.mplot3d import Axes3D
 
-import plotutils
+from latticedefects.latticegenerator import TriangularLatticeGenerator
+
+from latticedefects.utils import plotutils
 
 
 def test_dihedrals_simple():

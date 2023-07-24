@@ -13,9 +13,9 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-import plotutils
-from latticegenerator import TriangularLatticeGenerator, calc_metric_curvature_triangular_lattice
-from hoomdlattice import plot_dots, plot_bonds
+from latticedefects.utils import plotutils
+from latticedefects.latticegenerator import TriangularLatticeGenerator, calc_metric_curvature_triangular_lattice
+from latticedefects.hoomdlattice import plot_dots, plot_bonds
 
 
 def harmonic_example():

@@ -83,12 +83,23 @@ class Frame(object):
         dots = self.frame.particles.position
         ax.plot(dots[:, 0], dots[:, 1], dots[:, 2], ".", color='C0', alpha=0.8)
 
+    def plot_bonds(self, ax: Axes3D):
+        plot_bonds(ax, self.frame)
+
 
 def load_trajectory(filepath: str):
     log = gsd.hoomd.read_log(filepath)
+    print(log)
     steps = log['configuration/step']
-    harmonic_energy = log['log/md/bond/Harmonic/energy']
-    dihedrals_energy = log['log/md/dihedral/Periodic/energy']
+    if 'log/md/bond/Harmonic/energy' in log:
+        harmonic_energy = log['log/md/bond/Harmonic/energy']
+    else:
+        harmonic_energy = [None]
+    if 'log/md/dihedral/Periodic/energy' in log:
+        dihedrals_energy = log['log/md/dihedral/Periodic/energy']
+    else:
+        dihedrals_energy = [None]
+
     frames = []
     with gsd.hoomd.open(filepath) as f:
         for i, frame in enumerate(f):

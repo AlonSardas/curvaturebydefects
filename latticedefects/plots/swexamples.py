@@ -4,29 +4,14 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-from latticedefects import hoomdlattice, plots
+from latticedefects import hoomdlattice, plots, trajectory
+from latticedefects.trajectory import plot_frames_from_trajectory
 from latticedefects.utils import plotutils
 from latticedefects.latticegenerator import calc_metric_curvature_triangular_lattice, TriangularLatticeGenerator
-from simulations import create_lattice_for_sphere_by_traceless_quadrupoles, plot_dots, create_lattice_for_negative_K_SW
+from latticedefects.plots.latticeplotutils import create_fig_and_plot_dots, plot_flat_and_save
+from latticedefects.swdesign import create_lattice_for_sphere_by_traceless_quadrupoles, create_lattice_for_negative_K_SW
 
 FIGURE_PATH = os.path.join(plots.BASE_PATH, "MD-simulations")
-
-
-def plot_frames_from_trajectory(trajectory_file, output_folder):
-    print("Converting frames to trajectory")
-    frames = hoomdlattice.load_trajectory(trajectory_file)
-    for frame in frames:
-        fig, ax = plot_dots(frame, azim=-40, elev=12)
-        ax.set_zlim(-1, 1)
-        print(f"saving timestep={frame.timestep}")
-        ax.set_title(f'$ E_s $={frame.harmonic_energy:.6f}, '
-                     f'$ E_b $={frame.dihedrals_energy:.6f}, '
-                     f'timestep={frame.timestep}\n'
-                     f'total energy='
-                     f'{frame.harmonic_energy + frame.dihedrals_energy:.6f}')
-        fig.savefig(
-            os.path.join(output_folder, f'ts={frame.timestep}.svg'))
-        plt.clf()
 
 
 def simulate_sphere_progress():
@@ -81,6 +66,41 @@ def simulate_sphere_progress():
     # im.set_clim(0, 0.01)
 
     plt.show()
+
+
+def sphere_increasing_bending():
+    folder = os.path.join(FIGURE_PATH, 'sphere-increasing-bending')
+    bs = [0.01, 0.1, 1, 2, 5, 10]
+
+    for b in bs:
+        gsd_file = os.path.join(folder, f"b={b:.2f}.gsd")
+        img_file = os.path.join(folder, f"b={b:.2f}.svg")
+        if os.path.exists(gsd_file):
+            print(f"plotting b={b}")
+            frame = trajectory.load_trajectory(gsd_file)[0]
+            fig, ax = create_fig_and_plot_dots(frame, azim=-40, elev=12)
+            ax.set_zlim(-2, 2)
+            ax.set_title(f'$ E_s $={frame.harmonic_energy:.6f}, '
+                         f'$ E_b $={frame.dihedrals_energy:.6f}, '
+                         f'timestep={frame.timestep}\n'
+                         f'total energy='
+                         f'{frame.harmonic_energy + frame.dihedrals_energy:.6f}')
+            fig.savefig(img_file)
+
+    nx, ny = 48, 50
+    lattice_gen = create_lattice_for_sphere_by_traceless_quadrupoles(nx, ny, defects_x_jumps=6, factor=0.0001)
+    plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial.svg'), 15)
+
+    lattice_gen.set_z_to_noise()
+    lattice = lattice_gen.generate_lattice()
+
+    for b in bs:
+        lattice_gen.set_dihedral_k(b)
+        # Set the initial position as the last one
+        lattice_gen.dots[:, :] = lattice.get_dots()
+        lattice = lattice_gen.generate_lattice()
+        lattice.do_relaxation()
+        lattice.save_frame(os.path.join(folder, f"b={b:.2f}.gsd"))
 
 
 def test_SW_line():
@@ -145,7 +165,7 @@ def plot_negative_curvature():
     lattice_gen = create_lattice_for_negative_K_SW(
         nx, ny, defects_y_jumps=6, factor=0.0001)
 
-    plot_flat(lattice_gen, os.path.join(folder, 'initial.svg'), 20)
+    plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial.svg'), 20)
 
     lattice_gen.set_z_to_noise()
 
@@ -155,21 +175,11 @@ def plot_negative_curvature():
     lattice.do_relaxation(dt=0.1, iteration_time=500, force_tol=1e-8)
 
 
-def plot_flat(lattice_gen, filename, box_size):
-    fig = plt.figure()
-    ax: Axes3D = fig.add_subplot(111, projection='3d', azim=-90, elev=90)
-    lattice = lattice_gen.generate_lattice()
-    lattice.plot_bonds(ax)
-    # lattice.plot_dots(ax)
-    ax.set_xlim(-box_size, box_size)
-    ax.set_ylim(-box_size, box_size)
-    fig.savefig(filename)
-
-
 def main():
     # simulate_sphere_progress()
-    test_SW_line()
+    # test_SW_line()
     # plot_negative_curvature()
+    sphere_increasing_bending()
 
 
 if __name__ == '__main__':

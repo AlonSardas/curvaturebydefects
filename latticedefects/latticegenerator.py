@@ -123,7 +123,7 @@ class TriangularLatticeGenerator(object):
 
         return dihedral_periodic
 
-    def set_dihedral_k(self, dihedral_k:float):
+    def set_dihedral_k(self, dihedral_k: float):
         self.dihedrals.params["dihedral-basic"]["k"] = dihedral_k
 
     def set_z_to_noise(self, magnitude=0.05):
@@ -171,7 +171,7 @@ class TriangularLatticeGenerator(object):
 
                 elif {group[1], group[2], group[3]} == {old_index_left, new_index_up, old_index_right}:
                     frame.dihedrals.group[d] = [group[0], group[1], group[2], new_index_down]
-                
+
                 elif {group[0], group[1], group[2]} == {old_index_left, new_index_up, old_index_right}:
                     frame.dihedrals.group[d] = [new_index_down, group[1], group[2], group[3]]
 

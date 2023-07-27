@@ -6,11 +6,12 @@ See doc at:
 https://hoomd-blue.readthedocs.io/en/latest/module-md-minimize.html
 https://hoomd-blue.readthedocs.io/en/latest/howto/molecular.html
 """
-import gsd
+import gsd.hoomd
 import hoomd
+import numpy as np
 from hoomd import md
 from mpl_toolkits.mplot3d import Axes3D
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 
 class Lattice(object):
@@ -52,8 +53,11 @@ class Lattice(object):
         sim.run(0, write_at_start=True)  # This is necessary for calculating the energy in the first step
 
         while not fire.converged:
+            E_stretching = harmonic.energy
+            E_bending = dihedrals.energy
             print("Fire iteration. "
-                  f"Stretching energy: {harmonic.energy:.6f}, Bending energy: {dihedrals.energy:.6f}")
+                  f"E-stretch: {E_stretching:.6f}, E-bend: {E_bending:.6f}, "
+                  f"E-total: {E_stretching+E_bending:.6f}")
             if pre_iteration_hook is not None:
                 pre_iteration_hook()
             sim.run(iteration_time)
@@ -61,7 +65,14 @@ class Lattice(object):
         return sim.state.get_snapshot()
 
     def save_frame(self, filepath):
-        hoomd.write.GSD.write(self.sim.state, filepath)
+        logger = hoomd.logging.Logger()
+        logger += self.harmonic
+        logger += self.dihedrals
+        hoomd.write.GSD.write(self.sim.state, filepath, logger=logger)
+
+    def get_dots(self)->np.ndarray:
+        snapshot = self.sim.state.get_snapshot()
+        return snapshot.particles.position
 
     def plot_dots(self, ax: Axes3D):
         snapshot = self.sim.state.get_snapshot()
@@ -70,42 +81,6 @@ class Lattice(object):
 
     def plot_bonds(self, ax: Axes3D):
         plot_bonds(ax, self.sim.state.get_snapshot())
-
-
-class Frame(object):
-    def __init__(self, frame, step, harmonic_energy, dihedrals_energy):
-        self.frame = frame
-        self.timestep = step
-        self.harmonic_energy = harmonic_energy
-        self.dihedrals_energy = dihedrals_energy
-
-    def plot_dots(self, ax: Axes3D):
-        dots = self.frame.particles.position
-        ax.plot(dots[:, 0], dots[:, 1], dots[:, 2], ".", color='C0', alpha=0.8)
-
-    def plot_bonds(self, ax: Axes3D):
-        plot_bonds(ax, self.frame)
-
-
-def load_trajectory(filepath: str):
-    log = gsd.hoomd.read_log(filepath)
-    print(log)
-    steps = log['configuration/step']
-    if 'log/md/bond/Harmonic/energy' in log:
-        harmonic_energy = log['log/md/bond/Harmonic/energy']
-    else:
-        harmonic_energy = [None]
-    if 'log/md/dihedral/Periodic/energy' in log:
-        dihedrals_energy = log['log/md/dihedral/Periodic/energy']
-    else:
-        dihedrals_energy = [None]
-
-    frames = []
-    with gsd.hoomd.open(filepath) as f:
-        for i, frame in enumerate(f):
-            frames.append(Frame(
-                frame, steps[i], harmonic_energy[i], dihedrals_energy[i]))
-        return frames
 
 
 def do_relaxation(frame, harmonic, dihedrals, dt=0.05, force_tol=1e-5, angmom_tol=1e-2,
@@ -127,12 +102,14 @@ def do_relaxation(frame, harmonic, dihedrals, dt=0.05, force_tol=1e-5, angmom_to
     return sim.state.get_snapshot()
 
 
-def plot_dots(ax: Axes3D, snapshot: hoomd.snapshot.Snapshot):
+def plot_dots(ax: Axes3D,
+              snapshot: Union[hoomd.Snapshot, gsd.hoomd.Frame]):
     dots = snapshot.particles.position
-    ax.plot(dots[:, 0], dots[:, 1], dots[:, 2], ".")
+    return ax.plot(dots[:, 0], dots[:, 1], dots[:, 2], ".")[0]
 
 
-def plot_bonds(ax: Axes3D, snapshot: hoomd.Snapshot):
+def plot_bonds(ax: Axes3D,
+               snapshot: Union[hoomd.Snapshot, gsd.hoomd.Frame]):
     dots = snapshot.particles.position
     bonds = snapshot.bonds.group
 

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os.path
 
 import argparse
@@ -6,8 +8,8 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-from latticedefects.hoomdlattice import load_trajectory
-from latticedefects.plots import simulations
+import latticedefects.plots.latticeplotutils
+from latticedefects.trajectory import load_trajectory, plot_all_frames
 from latticedefects.utils import plotutils
 
 
@@ -17,7 +19,7 @@ def list_func(args):
         raise RuntimeError(f"Couldn't find the file: {filename}")
     log = gsd.hoomd.read_log(filename)
     steps = log['configuration/step']
-    print("The available timesteps are:")
+    print("The available time steps are:")
     print(steps)
 
 
@@ -34,13 +36,21 @@ def plot_func(args):
     if args.bonds:
         frame.plot_bonds(ax)
     else:
-        frame.plot_dots(ax)
+        latticedefects.plots.latticeplotutils.create_fig_and_plot_dots(ax)
     plotutils.set_3D_labels(ax)
 
     if args.axis == 'equal':
         ax.set_aspect('equal')
 
     plt.show()
+
+
+def plot_all_func(args):
+    filename = args.file
+    if not os.path.exists(filename):
+        raise RuntimeError(f"Couldn't find the file: {filename}")
+    traj = load_trajectory(filename)
+    plot_all_frames(traj)
 
 
 def main():
@@ -59,6 +69,10 @@ def main():
     plot_parser.add_argument('--axis', default='equal', choices=['equal', 'auto'])
     plot_parser.add_argument('--bonds', action='store_true')
     plot_parser.set_defaults(func=plot_func)
+
+    plot_all_parser = subparsers.add_parser('plot-all',
+                                            help='plot all the frames with slider to choose the frame')
+    plot_all_parser.set_defaults(func=plot_all_func)
 
     args = parser.parse_args()
     args.func(args)

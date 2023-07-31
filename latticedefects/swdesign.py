@@ -9,6 +9,7 @@ def create_lattice_for_sphere_by_traceless_quadrupoles(nx, ny,
                                                        factor=0.0001):
     lattice_gen = TriangularLatticeGenerator(nx, ny)
 
+    nx -= 1  # For nx dots we have nx-1 bonds
     middle_x = nx // 2
     max_x = nx - padding + 1
     xs_right = np.arange(middle_x, max_x, defects_x_jumps)

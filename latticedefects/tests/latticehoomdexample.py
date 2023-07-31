@@ -14,7 +14,8 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
 from latticedefects.utils import plotutils
-from latticedefects.latticegenerator import TriangularLatticeGenerator, calc_metric_curvature_triangular_lattice
+from latticedefects.latticegenerator import TriangularLatticeGenerator
+from latticedefects.geometry import calc_metric_curvature_triangular_lattice
 from latticedefects.hoomdlattice import plot_dots, plot_bonds
 
 

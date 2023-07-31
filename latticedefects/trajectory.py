@@ -1,13 +1,14 @@
-import os
-
 import gsd
 import matplotlib
+import os
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
+from matplotlib.widgets import Button
 from mpl_toolkits.mplot3d import Axes3D
 from typing import Sequence
 
 import latticedefects
+from latticedefects import geometry
 from latticedefects.hoomdlattice import plot_bonds, plot_dots
 from latticedefects.plots.latticeplotutils import create_fig_and_plot_dots
 from latticedefects.utils import plotutils
@@ -20,6 +21,9 @@ class Frame(object):
         self.harmonic_energy = harmonic_energy
         self.dihedrals_energy = dihedrals_energy
 
+    def get_dots(self):
+        return self.frame.particles.position
+
     def plot_dots(self, ax: Axes3D):
         dots = self.frame.particles.position
         ax.plot(dots[:, 0], dots[:, 1], dots[:, 2], ".", color='C0', alpha=0.8)
@@ -28,7 +32,7 @@ class Frame(object):
         plot_bonds(ax, self.frame)
 
 
-def load_trajectory(filepath: str):
+def load_trajectory(filepath: str) -> Sequence[Frame]:
     log = gsd.hoomd.read_log(filepath)
     steps = log['configuration/step']
     if 'log/md/bond/Harmonic/energy' in log:
@@ -55,7 +59,9 @@ def plot_all_frames(frames: Sequence[Frame]):
     dots_plot = plot_dots(ax, frames[0].frame)
 
     # Make a horizontal slider
-    frames_slider_ax = fig.add_axes([0.2, 0.05, 0.6, 0.03])
+    frames_slider_ax = fig.add_axes([0.2, 0.05, 0.5, 0.03])
+    curvature_button_ax = fig.add_axes([0.75, 0.05, 0.15, 0.08])
+
     frames_slider = matplotlib.widgets.Slider(
         ax=frames_slider_ax,
         label='frame index',
@@ -74,7 +80,23 @@ def plot_all_frames(frames: Sequence[Frame]):
 
     frames_slider.on_changed(update_frame)
 
-    plt.show()
+    button = Button(curvature_button_ax, 'Curvature', hovercolor='0.975')
+
+    def plot_curvature_event(event):
+        frame_index = frames_slider.val
+        frame = frames[frame_index]
+        dots = frame.frame.particles.position
+        Ks, Hs = geometry.calculate_curvatures_by_interpolation(dots)
+        fig_Ks, ax_Ks = plt.subplots()
+        plotutils.imshow_with_colorbar(fig_Ks, ax_Ks, Ks, "K")
+        fig_Ks.show()
+
+    button.on_clicked(plot_curvature_event)
+
+    try:
+        plt.show()
+    except KeyboardInterrupt:
+        print("Bye!")
 
 
 def plot_frames_from_trajectory(trajectory_file, output_folder):

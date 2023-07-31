@@ -6,11 +6,11 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
 from latticedefects import hoomdlattice, plots
-from latticedefects.plots.latticeplotutils import plot_flat_and_save
+from latticedefects.hoomdlattice import do_relaxation
+from latticedefects.latticegenerator import TriangularLatticeGenerator
+from latticedefects.geometry import calc_metric_curvature_triangular_lattice
 from latticedefects.swdesign import create_lattice_for_sphere_by_traceless_quadrupoles, create_cone_by_sw
 from latticedefects.utils import plotutils
-from latticedefects.hoomdlattice import do_relaxation
-from latticedefects.latticegenerator import TriangularLatticeGenerator, calc_metric_curvature_triangular_lattice
 
 FIGURE_PATH = os.path.join(plots.BASE_PATH, "MD-simulations")
 
@@ -200,7 +200,7 @@ def analyze_single_SW_displacement():
 
 def plot_single_SW():
     nx, ny = 8, 8
-    lattice_gen = TriangularLatticeGenerator(nx, ny)
+    lattice_gen = TriangularLatticeGenerator(nx, ny, dihedral_k=1.0)
 
     x = nx // 2 - 1
     y = ny // 2
@@ -211,13 +211,13 @@ def plot_single_SW():
     fig: Figure = plt.figure(figsize=(4, 10))
     ax1: Axes3D = fig.add_subplot(311, projection='3d', azim=-90, elev=90)
     ax2: Axes3D = fig.add_subplot(312, projection='3d', azim=-90, elev=90)
-    ax3: Axes3D = fig.add_subplot(313, projection='3d', azim=-24, elev=54)
+    ax3: Axes3D = fig.add_subplot(313, projection='3d', azim=123, elev=50)
     ax1.axis('off')
     ax2.axis('off')
     lattice.plot_bonds(ax1)
     lattice.plot_dots(ax1)
 
-    snapshot = lattice.do_relaxation()
+    snapshot = lattice.do_relaxation(force_tol=1e-8)
 
     relaxed = snapshot.particles.position
 
@@ -249,12 +249,12 @@ def plot_single_SW():
 
 
 def main():
-    cone_by_traceless_quadrupoles()
+    # cone_by_traceless_quadrupoles()
     # sphere_by_traceless_quadrupoles()
     # plot_sphere_by_traceless_quadrupoles()
     # sphere_by_inclusions()
     # analyze_single_SW_displacement()
-    # plot_single_SW()
+    plot_single_SW()
 
 
 if __name__ == "__main__":

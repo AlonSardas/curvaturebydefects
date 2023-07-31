@@ -4,10 +4,11 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-from latticedefects import hoomdlattice, plots, trajectory
+from latticedefects import hoomdlattice, plots, trajectory, geometry
 from latticedefects.trajectory import plot_frames_from_trajectory
 from latticedefects.utils import plotutils
-from latticedefects.latticegenerator import calc_metric_curvature_triangular_lattice, TriangularLatticeGenerator
+from latticedefects.latticegenerator import TriangularLatticeGenerator
+from latticedefects.geometry import calc_metric_curvature_triangular_lattice
 from latticedefects.plots.latticeplotutils import create_fig_and_plot_dots, plot_flat_and_save
 from latticedefects.swdesign import create_lattice_for_sphere_by_traceless_quadrupoles, create_lattice_for_negative_K_SW
 
@@ -89,7 +90,7 @@ def sphere_increasing_bending():
 
     nx, ny = 48, 50
     lattice_gen = create_lattice_for_sphere_by_traceless_quadrupoles(nx, ny, defects_x_jumps=6, factor=0.0001)
-    plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial.svg'), 15)
+    plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial'), 15)
 
     lattice_gen.set_z_to_noise()
     lattice = lattice_gen.generate_lattice()
@@ -165,7 +166,7 @@ def plot_negative_curvature():
     lattice_gen = create_lattice_for_negative_K_SW(
         nx, ny, defects_y_jumps=6, factor=0.0001)
 
-    plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial.svg'), 20)
+    plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial'), 20)
 
     lattice_gen.set_z_to_noise()
 
@@ -175,11 +176,41 @@ def plot_negative_curvature():
     lattice.do_relaxation(dt=0.1, iteration_time=500, force_tol=1e-8)
 
 
+def sphere_small_lattice():
+    folder = os.path.join(FIGURE_PATH, 'sphere-small-lattice')
+    trajectory_file = os.path.join(folder, f'trajectory.gsd')
+
+    # nx, ny = 20, 30
+    nx, ny = 50, 60
+    dihedral_k = 1.2
+
+    lattice_gen = TriangularLatticeGenerator(nx, ny, dihedral_k=dihedral_k)
+    # lattice_gen.add_SW_defect(15, 9)
+    # lattice_gen.add_SW_defect(15, 10)
+    lattice_gen.add_SW_defect(30, 24)
+    lattice_gen.set_z_to_sphere(radius=1000)
+    lattice = lattice_gen.generate_lattice()
+    lattice.log_trajectory(os.path.join(folder, 'trajectory-single-SW.gsd'), 100)
+    lattice.do_relaxation()
+
+    lattice_gen = create_lattice_for_sphere_by_traceless_quadrupoles(
+        nx, ny, padding=1, factor=0.0004, defects_x_jumps=4)
+    lattice_gen.set_dihedral_k(dihedral_k)
+
+    plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial'))
+
+    lattice_gen.set_z_to_sphere(radius=1000)
+    lattice = lattice_gen.generate_lattice()
+    lattice.log_trajectory(trajectory_file, 100)
+    lattice.do_relaxation()
+
+
 def main():
     # simulate_sphere_progress()
     # test_SW_line()
     # plot_negative_curvature()
-    sphere_increasing_bending()
+    # sphere_increasing_bending()
+    sphere_small_lattice()
 
 
 if __name__ == '__main__':

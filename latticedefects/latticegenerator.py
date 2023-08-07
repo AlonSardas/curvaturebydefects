@@ -126,11 +126,16 @@ class TriangularLatticeGenerator(object):
     def set_dihedral_k(self, dihedral_k: float):
         self.dihedrals.params["dihedral-basic"]["k"] = dihedral_k
 
+    def set_inclusion_d(self, inclusion_d: float):
+        self.harmonic.params["inclusion"]["r0"] = inclusion_d
+
     def set_z_to_noise(self, magnitude=0.05):
         # We add noise in the z axis, to allow out of plane perturbations
         self.dots[:, 2] += self.d * magnitude * (np.random.random(self.N) - 0.5)
 
-    def set_z_to_sphere(self, radius=10.0):
+    def set_z_to_sphere(self, radius=None):
+        if radius is None:
+            radius = self.nx * 3
         mean_x = np.mean(self.dots[:, 0])
         mean_y = np.mean(self.dots[:, 1])
         self.dots[:, 2] = np.sqrt(radius ** 2 - (self.dots[:, 0] - mean_x) ** 2 - (self.dots[:, 1] - mean_y) ** 2)

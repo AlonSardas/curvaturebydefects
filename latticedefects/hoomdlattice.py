@@ -77,7 +77,16 @@ class Lattice(object):
     def plot_dots(self, ax: Axes3D):
         snapshot = self.sim.state.get_snapshot()
         dots = snapshot.particles.position
-        ax.plot(dots[:, 0], dots[:, 1], dots[:, 2], ".", color='C0', alpha=0.8)
+        dots_type = snapshot.particles.typeid
+        regular_dots = np.logical_or(dots_type == 0, dots_type == 1)
+        ax.plot(dots[regular_dots, 0],
+                dots[regular_dots, 1],
+                dots[regular_dots, 2], ".", color='C0', alpha=0.8)
+        inclusion_dots = dots_type == 2
+        ax.plot(dots[inclusion_dots, 0],
+                dots[inclusion_dots, 1],
+                dots[inclusion_dots, 2],
+                ".", markersize=10, color='C3', alpha=0.8)
 
     def plot_bonds(self, ax: Axes3D):
         plot_bonds(ax, self.sim.state.get_snapshot())

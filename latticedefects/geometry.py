@@ -1,7 +1,8 @@
-from typing import Tuple
-
 import numpy as np
-from scipy.interpolate.interpnd import LinearNDInterpolator, CloughTocher2DInterpolator
+import scipy
+from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate.interpnd import CloughTocher2DInterpolator, LinearNDInterpolator
+from typing import Tuple
 
 
 def calc_metric_curvature_triangular_lattice(dots, nx, ny):
@@ -87,21 +88,60 @@ def calc_metric_curvature_triangular_lattice(dots, nx, ny):
     return Ks * 2, g11, g12, g22
 
 
-def calculate_curvatures_by_interpolation(
-        dots, x_samples: int = 120, y_samples: int = 120) -> Tuple[np.ndarray, np.ndarray]:
-    # interp = LinearNDInterpolator(dots[:, :2], dots[:, 2])
-    interp = CloughTocher2DInterpolator(dots[:, :2], dots[:, 2])
-    xs = np.linspace(np.min(dots[:, 0]), np.max(dots[:, 0]), x_samples)
-    ys = np.linspace(np.min(dots[:, 1]), np.max(dots[:, 1]), y_samples)
-    xs += (xs[1] - xs[0]) / 2
-    ys += (ys[1] - ys[0]) / 2
+def get_interpolation(dots, x_samples: int = 120, y_samples: int = 120, interp_type='tocher'):
+    if interp_type == 'linear':
+        interp = LinearNDInterpolator(dots[:, :2], dots[:, 2])
+    elif interp_type == 'tocher':
+        interp = CloughTocher2DInterpolator(dots[:, :2], dots[:, 2])
+    else:
+        raise ValueError(f'Unknown interpolation type: {interp_type}')
+    xs = np.linspace(np.min(dots[:, 0]), np.max(dots[:, 0]), x_samples + 2)
+    ys = np.linspace(np.min(dots[:, 1]), np.max(dots[:, 1]), y_samples + 2)
+    xs = xs[1:-1]
+    ys = ys[1:-1]
     Xs, Ys = np.meshgrid(xs, ys)
     Zs = interp(Xs, Ys)
 
     quad_dots = np.array([Xs.flatten(), Ys.flatten(), Zs.flatten()])
+    return interp, quad_dots
+
+
+def calculate_curvatures_by_interpolation(
+        dots, x_samples: int = 40, y_samples: int = 40) -> Tuple[np.ndarray, np.ndarray]:
+    interp, quad_dots = get_interpolation(dots, x_samples, y_samples)
+
     import origami.quadranglearray
     from origami.origamimetric import OrigamiGeometry
+    import origami.origamimetric
+    origami.origamimetric.skip_half_dots = False
     quads = origami.quadranglearray.QuadrangleArray(quad_dots, y_samples, x_samples)
     geom = OrigamiGeometry(quads)
     Ks, Hs = geom.get_curvatures_by_shape_operator()
     return Ks, Hs
+
+
+def get_zs_based_on_Ks(
+        nx: int, ny: int, Ks: np.ndarray, factor: float) -> np.ndarray:
+    # Note: By now this function does not work for negative curvatures at all!!!
+    Ks_ny, Ks_nx = Ks.shape
+    Ks_xs = np.arange(Ks_nx)
+    Ks_ys = np.arange(Ks_ny)
+    interp = RegularGridInterpolator((Ks_ys, Ks_xs), Ks)
+
+    xs = np.linspace(0, Ks_nx - 1, nx)
+    ys = np.linspace(0, Ks_ny - 1, ny)
+    xs, ys = np.meshgrid(xs, ys)
+    ps = np.array([ys.flat, xs.flat]).transpose()
+    Ks_interp = interp(ps)
+    Ks_interp = Ks_interp.reshape((ny, nx))
+
+    y_x_factor = np.sqrt(3) / 2
+
+    xs = np.arange(nx * 2, dtype='float64')
+    ys = np.arange(ny * 2, dtype='float64')
+    xs, ys = np.meshgrid(xs, ys)
+
+    cone_like_zs = -factor * np.sqrt(
+        (xs - nx) ** 2 + (y_x_factor * (ys - ny)) ** 2)
+    zs = scipy.signal.convolve2d(Ks_interp, cone_like_zs, mode='same')
+    return zs

@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 
 from latticedefects.latticegenerator import TriangularLatticeGenerator
 
@@ -74,3 +75,49 @@ def create_cone_by_sw(nx, ny, defects_jumps, padding):
                     print("warning: ", e.args)
 
     return lattice_gen
+
+
+def create_cone_by_sw_symmetric(nx, ny, defects_jumps, padding, x_shift=0):
+    """
+    This is another way to get a cone, by using the homogeneous solutions.
+    see
+    https://www.desmos.com/calculator/osbqsnqug6
+    """
+    lattice_gen = TriangularLatticeGenerator(nx, ny)
+    xs_r = np.arange(nx // 2 + x_shift, nx - padding, defects_jumps)
+    xs_l = np.arange(nx // 2 + x_shift, padding, -defects_jumps)
+    xs = np.append(xs_l[::-1][:-1], xs_r)
+    ys_r = np.arange(ny // 2, ny - padding, defects_jumps / (np.sqrt(3) / 2))
+    ys_l = np.arange(ny // 2, padding, -defects_jumps / (np.sqrt(3) / 2))
+    ys = np.append(ys_l[::-1][:-1], ys_r)
+
+    print(xs)
+    print(ys)
+
+    for x in xs:
+        for y in ys:
+            if abs(x - nx / 2) >= (np.sqrt(3) / 2) * abs(y - ny / 2):
+                xi, yi = round(x), round(y)
+                print(f"Putting SW at {xi},{yi}")
+                lattice_gen.add_SW_defect(yi, xi)
+
+    return lattice_gen
+
+
+def get_distribution_by_curvature(Ks: np.ndarray) -> np.ndarray:
+    """
+    Use the green function to create the distribution of SW according
+    the Gaussian curvature given in Ks
+
+    :param Ks: 2D array with the desired Gaussian curvature
+    :return: 2D array with same shape
+    """
+    nx, ny = Ks.shape
+    nx, ny = 2 * nx + 1, 2 * ny + 1
+    b = np.zeros((ny, nx))
+    xs = np.arange(nx)
+    ys = np.arange(ny)
+    xs, ys = np.meshgrid(xs, ys)
+    mask = np.abs(xs - (nx - 1) / 2) >= np.abs(ys - (ny - 1) / 2)
+    b[mask] = 1
+    return scipy.signal.convolve2d(Ks, b, mode='same')

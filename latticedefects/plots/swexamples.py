@@ -4,13 +4,14 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-from latticedefects import hoomdlattice, plots, trajectory, geometry
+from latticedefects import hoomdlattice, plots, trajectory
+from latticedefects.geometry import calc_metric_curvature_triangular_lattice
+from latticedefects.latticegenerator import TriangularLatticeGenerator
+from latticedefects.plots.latticeplotutils import create_fig_and_plot_dots, plot_flat_and_save
+from latticedefects.swdesign import create_lattice_for_sphere_by_traceless_quadrupoles, \
+    create_lattice_for_negative_K_SW, create_cone_by_sw_symmetric
 from latticedefects.trajectory import plot_frames_from_trajectory
 from latticedefects.utils import plotutils
-from latticedefects.latticegenerator import TriangularLatticeGenerator
-from latticedefects.geometry import calc_metric_curvature_triangular_lattice
-from latticedefects.plots.latticeplotutils import create_fig_and_plot_dots, plot_flat_and_save
-from latticedefects.swdesign import create_lattice_for_sphere_by_traceless_quadrupoles, create_lattice_for_negative_K_SW
 
 FIGURE_PATH = os.path.join(plots.BASE_PATH, "MD-simulations")
 
@@ -205,12 +206,44 @@ def sphere_small_lattice():
     lattice.do_relaxation()
 
 
+def cone_by_traceless_quadrupoles_symmetric():
+    folder = os.path.join(FIGURE_PATH, 'cone-by-SW2')
+
+    nx, ny = 50, 60
+    defects_jumps = 4
+    padding = 1
+    x_shift = -3
+    lattice_gen = create_cone_by_sw_symmetric(nx, ny, defects_jumps, padding, x_shift)
+    # lattice_gen.set_sw_bonds(r0=0.3)
+
+    lattice_gen.set_dihedral_k(2.0)
+
+    plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial'))
+    print("flat saved")
+
+    lattice_gen.set_z_to_sphere(radius=1000)
+
+    lattice = lattice_gen.generate_lattice()
+    lattice.log_trajectory(os.path.join(folder, 'trajectory.gsd'), 500)
+    lattice.do_relaxation(force_tol=1e-7, iteration_time=500)
+
+    fig: Figure = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection="3d")
+    lattice.plot_dots(ax)
+    plotutils.set_3D_labels(ax)
+    # lattice.plot_bonds(ax)
+    ax.set_zlim(-5, 5)
+
+    plt.show()
+
+
 def main():
     # simulate_sphere_progress()
     # test_SW_line()
     # plot_negative_curvature()
     # sphere_increasing_bending()
-    sphere_small_lattice()
+    # sphere_small_lattice()
+    cone_by_traceless_quadrupoles_symmetric()
 
 
 if __name__ == '__main__':

@@ -47,6 +47,18 @@ def test_dihedrals_with_SW():
     plt.show()
 
 
+def test_SW_at_edges():
+    nx, ny = 4, 4
+    lattice_gen = TriangularLatticeGenerator(nx, ny)
+
+    lattice_gen.add_SW_defect(3, 0)
+    lattice = lattice_gen.generate_lattice()
+    fig: Figure = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection="3d")
+    lattice.plot_bonds(ax)
+    plt.show()
+
+
 def test_plot_dots():
     nx, ny = 10, 10
     lattice_gen = TriangularLatticeGenerator(nx, ny)
@@ -59,10 +71,26 @@ def test_plot_dots():
     plt.show()
 
 
+def test_close_SW():
+    nx, ny = 3, 4
+    lattice_gen = TriangularLatticeGenerator(nx, ny)
+
+    lattice_gen.add_SW_defect(1, 0)
+    lattice_gen.add_SW_defect(2, 1)
+    print(lattice_gen.frame.dihedrals.group)
+    lattice = lattice_gen.generate_lattice()
+    fig: Figure = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection="3d")
+    lattice.plot_bonds(ax)
+    plt.show()
+
+
 def main():
     # test_dihedrals_with_SW()
     # test_dihedrals_simple()
-    test_plot_dots()
+    # test_plot_dots()
+    # test_SW_at_edges()
+    test_close_SW()
 
 
 if __name__ == '__main__':

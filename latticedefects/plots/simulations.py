@@ -25,7 +25,7 @@ def cone_by_traceless_quadrupoles():
 
     lattice_gen.set_dihedral_k(3.0)
 
-    # plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial.svg'), 15)
+    # plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial'), 15)
 
     lattice_gen.set_z_to_sphere(radius=1000)
 

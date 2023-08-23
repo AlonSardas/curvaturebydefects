@@ -36,7 +36,7 @@ def plot_func(args):
     if args.bonds:
         frame.plot_bonds(ax)
     else:
-        latticedefects.plots.latticeplotutils.create_fig_and_plot_dots(ax)
+        frame.plot_dots(ax)
     plotutils.set_3D_labels(ax)
 
     if args.axis == 'equal':

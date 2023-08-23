@@ -1,16 +1,8 @@
 import os.path
 
-from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
-from mpl_toolkits.mplot3d import Axes3D
-
-from latticedefects import hoomdlattice, plots, trajectory, geometry
-from latticedefects.trajectory import plot_frames_from_trajectory
-from latticedefects.utils import plotutils
+from latticedefects import plots
 from latticedefects.latticegenerator import TriangularLatticeGenerator
-from latticedefects.geometry import calc_metric_curvature_triangular_lattice
-from latticedefects.plots.latticeplotutils import create_fig_and_plot_dots, plot_flat_and_save
-from latticedefects.swdesign import create_lattice_for_sphere_by_traceless_quadrupoles, create_lattice_for_negative_K_SW
+from latticedefects.plots.latticeplotutils import plot_flat_and_save
 
 FIGURE_PATH = os.path.join(plots.BASE_PATH, "MD-simulations", 'flat-examples')
 

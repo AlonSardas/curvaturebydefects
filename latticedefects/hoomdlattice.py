@@ -6,6 +6,8 @@ See doc at:
 https://hoomd-blue.readthedocs.io/en/latest/module-md-minimize.html
 https://hoomd-blue.readthedocs.io/en/latest/howto/molecular.html
 """
+import os.path
+
 import gsd.hoomd
 import hoomd
 import numpy as np
@@ -36,6 +38,13 @@ class Lattice(object):
                                      trigger=trigger,
                                      mode='wb', logger=logger)
         self.sim.operations.writers.append(gsd_writer)
+        print("----------------")
+        print("Logging trajectory to")
+        print(filename)
+        print(f'cd "{os.path.dirname(filename)}"')
+        print(f'defectsplot --file="{os.path.basename(filename)}" plot-all')
+        print("----------------")
+        print()
 
     def do_relaxation(self, dt=0.05, force_tol=1e-6, angmom_tol=1e-2,
                       energy_tol=1e-10, iteration_time=1000,
@@ -57,7 +66,7 @@ class Lattice(object):
             E_bending = dihedrals.energy
             print("Fire iteration. "
                   f"E-stretch: {E_stretching:.6f}, E-bend: {E_bending:.6f}, "
-                  f"E-total: {E_stretching+E_bending:.6f}")
+                  f"E-total: {E_stretching + E_bending:.6f}")
             if pre_iteration_hook is not None:
                 pre_iteration_hook()
             sim.run(iteration_time)
@@ -70,7 +79,7 @@ class Lattice(object):
         logger += self.dihedrals
         hoomd.write.GSD.write(self.sim.state, filepath, logger=logger)
 
-    def get_dots(self)->np.ndarray:
+    def get_dots(self) -> np.ndarray:
         snapshot = self.sim.state.get_snapshot()
         return snapshot.particles.position
 

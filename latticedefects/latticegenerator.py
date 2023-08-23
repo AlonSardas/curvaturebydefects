@@ -2,10 +2,10 @@ import gsd.hoomd
 import numpy as np
 from hoomd import md
 
+from latticedefects import geometry
 from latticedefects.hoomdlattice import Lattice
 
 
-# noinspection PyPep8Naming
 class TriangularLatticeGenerator(object):
     def __init__(self, nx: int, ny: int, d=1.0, spring_constant=20.0, dihedral_k=2.0, inclusion_d=1.5):
         N = nx * ny
@@ -129,6 +129,12 @@ class TriangularLatticeGenerator(object):
     def set_inclusion_d(self, inclusion_d: float):
         self.harmonic.params["inclusion"]["r0"] = inclusion_d
 
+    def set_sw_bonds(self, k: float = None, r0: float = None):
+        if k is not None:
+            self.harmonic.params["SW"]["k"] = k
+        if r0 is not None:
+            self.harmonic.params["SW"]["r0"] = r0
+
     def set_z_to_noise(self, magnitude=0.05):
         # We add noise in the z axis, to allow out of plane perturbations
         self.dots[:, 2] += self.d * magnitude * (np.random.random(self.N) - 0.5)
@@ -144,11 +150,20 @@ class TriangularLatticeGenerator(object):
                                "this may happen if the radius of the sphere is too small")
         self.dots[:, 2] -= np.mean(self.dots[:, 2])
 
+    def set_z_by_curvature(self, Ks: np.ndarray, factor: float):
+        zs = geometry.get_zs_based_on_Ks(self.nx, self.ny, Ks, factor)
+        self.dots[:, 2] = zs.flatten()
+
     def _center_XY_plane(self):
         self.dots[:, 0] -= np.mean(self.dots[:, 0])
         self.dots[:, 1] -= np.mean(self.dots[:, 1])
 
-    def add_SW_defect(self, i, j, should_fix_dihedral=True):
+    def add_SW_defect(self, i: int, j: int, should_fix_dihedral=True):
+        if i <= 0 or i >= self.ny - 1 or j < 0 or j >= self.nx - 1:
+            raise ValueError(
+                f"Got invalid indexes. "
+                f"i must be in [1,{self.ny - 2}] j in [0,{self.nx - 2}], "
+                f"got i={i},j={j}")
         frame, nx, ny = self.frame, self.nx, self.ny
         indices = self.indices
         j_shift = i % 2

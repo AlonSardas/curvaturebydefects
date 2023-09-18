@@ -1,3 +1,7 @@
+import math
+
+from typing import Tuple
+
 import numpy as np
 import scipy
 
@@ -121,3 +125,48 @@ def get_distribution_by_curvature(Ks: np.ndarray) -> np.ndarray:
     mask = np.abs(xs - (nx - 1) / 2) >= np.abs(ys - (ny - 1) / 2)
     b[mask] = 1
     return scipy.signal.convolve2d(Ks, b, mode='same')
+
+
+def create_defects_map_by_dist(
+        dist: np.ndarray, nx: int, reduce_factor: float = 0.9) -> \
+        Tuple[np.ndarray, np.ndarray]:
+    if np.any(dist < 0):
+        raise ValueError("The given distribution has negative value!")
+
+    dist: np.ndarray = dist.copy()
+    dist /= dist.max()
+    dist *= reduce_factor  # to have maximum value smaller than 1
+    dist_ny, dist_nx = dist.shape
+    y_x_factor = np.sqrt(3) / 2
+    factor = nx / dist.shape[1]
+    ny = math.floor(dist_ny / dist_nx * nx / y_x_factor)
+
+    dist_xs = np.arange(dist_nx)
+    dist_ys = np.arange(dist_ny)
+
+    defects_map = np.zeros((ny, nx))
+    interp_vals = np.zeros((ny, nx))
+    x_jumps = 2
+    y_jumps = 2
+    for j in range(0, nx - 1, x_jumps):
+        for i in range(1, ny - 1, y_jumps):
+            x = j / factor
+            y = i * y_x_factor / factor
+            val = scipy.interpolate.interpn((dist_ys, dist_xs), dist, (y, x))[0]
+            r = np.random.random()
+            interp_vals[i, j] = val
+            if r < val:
+                defects_map[i, j] = 1
+
+    return defects_map, interp_vals
+
+
+def create_lattice_by_defects_map(defects_map: np.ndarray) -> TriangularLatticeGenerator:
+    ny, nx = defects_map.shape
+    lattice_gen = TriangularLatticeGenerator(nx, ny)
+
+    for j in range(0, nx):
+        for i in range(1, ny):
+            if defects_map[i, j] == 1:
+                lattice_gen.add_SW_defect(i, j)
+    return lattice_gen

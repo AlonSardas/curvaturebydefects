@@ -25,7 +25,11 @@ folder = os.path.join(FIGURE_PATH, 'superposition')
 
 def plot_single():
     nx, ny = 50, 60
-    lattice_gen = TriangularLatticeGenerator(nx, ny, dihedral_k=dihedral_k)
+    dihedral_k = 2
+    spring_constant = 0.1
+    lattice_gen = TriangularLatticeGenerator(nx, ny, spring_constant=spring_constant, dihedral_k=dihedral_k)
+
+    print(f"expected length: {dihedral_k / spring_constant}")
 
     lattice_gen.add_SW_defect(ny // 2, nx // 2)
     lattice_gen.set_z_to_sphere(radius=1000)
@@ -121,9 +125,9 @@ def _plot_K_and_save(lattice, name):
 
 
 def main():
-    # plot_single()
+    plot_single()
     # plot_scattered()
-    plot_cone()
+    # plot_cone()
 
 
 if __name__ == '__main__':

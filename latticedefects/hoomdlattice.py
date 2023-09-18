@@ -100,6 +100,9 @@ class Lattice(object):
     def plot_bonds(self, ax: Axes3D):
         plot_bonds(ax, self.sim.state.get_snapshot())
 
+    def plot_indexes_text(self, ax: Axes3D):
+        plot_dots_indexes(ax, self.sim.state.get_snapshot())
+
 
 def do_relaxation(frame, harmonic, dihedrals, dt=0.05, force_tol=1e-5, angmom_tol=1e-2,
                   energy_tol=1e-10) -> hoomd.Snapshot:
@@ -144,3 +147,9 @@ def plot_bonds(ax: Axes3D,
             [dots[p1, 2], dots[p2, 2]],
             "-", color=color, alpha=0.8
         )
+
+
+def plot_dots_indexes(ax: Axes3D, snapshot: Union[hoomd.Snapshot, gsd.hoomd.Frame]):
+    dots = snapshot.particles.position
+    for i, (x, y, z) in enumerate(dots):
+        ax.text(x + 0.2, y, z, str(i), fontsize=10)

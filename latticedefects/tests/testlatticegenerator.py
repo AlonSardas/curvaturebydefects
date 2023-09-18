@@ -2,6 +2,7 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
+from latticedefects.hoomdlattice import plot_dots, plot_dots_indexes
 from latticedefects.latticegenerator import TriangularLatticeGenerator
 
 from latticedefects.utils import plotutils
@@ -85,12 +86,42 @@ def test_close_SW():
     plt.show()
 
 
+def test_remove_dots():
+    nx, ny = 10, 12
+    lattice_gen = TriangularLatticeGenerator(nx, ny)
+
+    lattice_gen.remove_dots_inside(3)
+    lattice = lattice_gen.generate_lattice()
+
+    fig = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection='3d')
+    # lattice.plot_dots(ax)
+    lattice.plot_bonds(ax)
+    lattice.plot_indexes_text(ax)
+
+    print(lattice_gen.frame.dihedrals.group)
+
+    plt.show()
+
+    def pre_iteration_hook():
+        fig = plt.figure()
+        ax: Axes3D = fig.add_subplot(111, projection='3d')
+        # lattice.plot_dots(ax)
+        lattice.plot_bonds(ax)
+        # ax.set_zlim(-2, 2)
+        plt.show()
+        print(lattice.sim.timestep)
+
+    lattice.do_relaxation(dt=0.05, pre_iteration_hook=pre_iteration_hook, iteration_time=10)
+
+
 def main():
     # test_dihedrals_with_SW()
     # test_dihedrals_simple()
     # test_plot_dots()
     # test_SW_at_edges()
-    test_close_SW()
+    # test_close_SW()
+    test_remove_dots()
 
 
 if __name__ == '__main__':

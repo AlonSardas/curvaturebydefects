@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 from scipy.interpolate import RegularGridInterpolator
@@ -122,7 +123,10 @@ def calculate_curvatures_by_interpolation(
 
 def get_zs_based_on_Ks(
         nx: int, ny: int, Ks: np.ndarray, factor: float) -> np.ndarray:
-    # Note: By now this function does not work for negative curvatures at all!!!
+    # See the paper:
+    # Defects in flexible membranes with crystalline order
+    # H. S. Seung and David R. Nelson
+
     Ks_ny, Ks_nx = Ks.shape
     Ks_xs = np.arange(Ks_nx)
     Ks_ys = np.arange(Ks_ny)
@@ -135,13 +139,31 @@ def get_zs_based_on_Ks(
     Ks_interp = interp(ps)
     Ks_interp = Ks_interp.reshape((ny, nx))
 
+    fig, ax = plt.subplots()
+    from latticedefects.utils import plotutils
+    plotutils.imshow_with_colorbar(fig, ax, Ks_interp, "interp Ks")
+
     y_x_factor = np.sqrt(3) / 2
 
     xs = np.arange(nx * 2, dtype='float64')
     ys = np.arange(ny * 2, dtype='float64')
     xs, ys = np.meshgrid(xs, ys)
 
-    cone_like_zs = -factor * np.sqrt(
+    eps = 0.000000001
+    rs = np.sqrt(
         (xs - nx) ** 2 + (y_x_factor * (ys - ny)) ** 2)
-    zs = scipy.signal.convolve2d(Ks_interp, cone_like_zs, mode='same')
+    sin_phi = (ys - ny) / (rs + eps)
+    cos_phi = (xs - nx) / (rs + eps)
+    sin_2phi = 2 * sin_phi * cos_phi
+
+    cone_like_zs = -factor * rs
+    negative_disc_zs = factor * rs * sin_2phi
+
+    Ks_pos = Ks_interp.copy()
+    Ks_pos[Ks_pos < 0] = 0
+    zs = scipy.signal.convolve2d(Ks_pos, cone_like_zs, mode='same')
+
+    Ks_neg = Ks_interp.copy()
+    Ks_neg[Ks_neg > 0] = 0
+    zs += scipy.signal.convolve2d(Ks_neg, negative_disc_zs, mode='same')
     return zs

@@ -1,7 +1,3 @@
-from typing import Tuple
-
-import math
-
 import numpy as np
 import os
 import scipy
@@ -9,11 +5,12 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 from scipy import ndimage
-from scipy.interpolate.interpnd import LinearNDInterpolator
+from typing import Tuple
 
 from latticedefects import geometry, swdesign, plots
 from latticedefects.latticegenerator import TriangularLatticeGenerator
 from latticedefects.plots.latticeplotutils import plot_flat_and_save
+from latticedefects.swdesign import create_defects_map_by_dist, create_lattice_by_defects_map
 from latticedefects.trajectory import load_trajectory
 from latticedefects.utils import plotutils
 
@@ -183,7 +180,7 @@ def test_dist():
         return g1 + g2
 
     def Ks_func(x, y):
-        return np.logical_and(x==20, y==25)
+        return np.logical_and(x == 20, y == 25)
 
     nx = 40
     ny = 36
@@ -240,47 +237,8 @@ def plot_test_dist_result():
 
 def create_lattice_by_dist(dist: np.ndarray, nx: int, reduce_factor: float = 0.9) -> \
         Tuple[TriangularLatticeGenerator, np.ndarray, np.ndarray]:
-    if np.any(dist < 0):
-        raise ValueError("The given distribution has negative value!")
-
-    dist: np.ndarray = dist.copy()
-    dist /= dist.max()
-    dist *= reduce_factor  # to have maximum value smaller than 1
-    dist_ny, dist_nx = dist.shape
-    y_x_factor = np.sqrt(3) / 2
-    factor = nx / dist.shape[1]
-    ny = math.floor(dist_ny / dist_nx * nx / y_x_factor)
-    print(ny)
-
-    dist_xs = np.arange(dist_nx)
-    dist_ys = np.arange(dist_ny)
-
-    lattice_gen = TriangularLatticeGenerator(nx, ny)
-    dots = lattice_gen.dots
-    min_x = np.min(dots[:, 0])
-    min_y = np.min(dots[:, 1])
-    print(factor)
-
-    defects_map = np.zeros((ny, nx))
-    interp_vals = np.zeros((ny, nx))
-    x_jumps = 2
-    y_jumps = 2
-    for j in range(0, nx - 1, x_jumps):
-        for i in range(1, ny - 1, y_jumps):
-            dot = dots[lattice_gen.indices[i, j], :]
-            x, y, z = dot
-            x -= min_x
-            y -= min_y
-            x /= factor
-            y /= factor
-            val = scipy.interpolate.interpn((dist_ys, dist_xs), dist, (y, x))[0]
-            r = np.random.random()
-            interp_vals[i, j] = val
-            # print(x, y, val)
-            if r < val:
-                # print(f"Putting SW at {j}, {i}")
-                defects_map[i, j] = 1
-                lattice_gen.add_SW_defect(i, j)
+    defects_map, interp_vals = create_defects_map_by_dist(dist, nx, reduce_factor)
+    lattice_gen = create_lattice_by_defects_map(defects_map)
     return lattice_gen, defects_map, interp_vals
 
 
@@ -347,6 +305,7 @@ def main():
     # plot_test_dist_result()
     # test_face_design()
     test_inverse()
+
 
 if __name__ == '__main__':
     main()

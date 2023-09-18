@@ -76,6 +76,12 @@ def plot_all_frames(frames: Sequence[Frame]):
         dots = frame.frame.particles.position
         dots_plot.set_data_3d(dots[:, 0], dots[:, 1], dots[:, 2])
         ax.auto_scale_xyz(dots[:, 0], dots[:, 1], dots[:, 2])
+        E_s = frame.harmonic_energy
+        E_b = frame.dihedrals_energy
+        E_tot = E_s + E_b
+        ax.set_title(f'$E_S$ = {E_s:.6f};\t'
+                     f'$E_B$ = {E_b:.6f};\t'
+                     '$E_{tot}$' f' = {E_tot:.6f}')
         fig.canvas.draw_idle()
 
     frames_slider.on_changed(update_frame)

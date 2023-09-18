@@ -25,8 +25,8 @@ class TriangularLatticeGenerator(object):
 
         frame.particles.N = N
         frame.particles.position = dots
-        frame.particles.types = ["A", "SW", "I"]
-        frame.particles.typeid = [0] * N
+        frame.particles.types = ["A", "SW", "I", "R"]
+        frame.particles.typeid = np.zeros(N)
         frame.configuration.box = [3 * d * nx, 3 * d * ny, 3 * d * nx, 0, 0, 0]
         self.harmonic = self._add_bonds_to_frame(spring_constant, d, inclusion_d)
         self.dihedrals = self._add_dihedrals_to_frame(dihedral_k)
@@ -126,6 +126,9 @@ class TriangularLatticeGenerator(object):
     def set_dihedral_k(self, dihedral_k: float):
         self.dihedrals.params["dihedral-basic"]["k"] = dihedral_k
 
+    def get_dihedral_k(self) -> float:
+        return self.dihedrals.params["dihedral-basic"]["k"]
+
     def set_inclusion_d(self, inclusion_d: float):
         self.harmonic.params["inclusion"]["r0"] = inclusion_d
 
@@ -134,6 +137,12 @@ class TriangularLatticeGenerator(object):
             self.harmonic.params["SW"]["k"] = k
         if r0 is not None:
             self.harmonic.params["SW"]["r0"] = r0
+
+    def get_spring_constant(self) -> float:
+        return self.harmonic.params["basic"]['k']
+
+    def set_spring_constant(self, spring_constant: float):
+        self.harmonic.params["basic"]['k'] = spring_constant
 
     def set_z_to_noise(self, magnitude=0.05):
         # We add noise in the z axis, to allow out of plane perturbations
@@ -157,6 +166,39 @@ class TriangularLatticeGenerator(object):
     def _center_XY_plane(self):
         self.dots[:, 0] -= np.mean(self.dots[:, 0])
         self.dots[:, 1] -= np.mean(self.dots[:, 1])
+
+    def remove_dots_inside(self, r: float):
+        dots = self.dots
+        indexes = dots[:, 0] ** 2 + dots[:, 1] ** 2 < r ** 2
+        self.remove_dots(indexes)
+
+    def remove_dots_outside(self, r: float):
+        dots = self.dots
+        indexes = dots[:, 0] ** 2 + dots[:, 1] ** 2 > r ** 2
+        self.remove_dots(indexes)
+
+    def remove_dots(self, dots_to_remove):
+        self.frame.particles.typeid[dots_to_remove] = 3
+        self.dots[dots_to_remove, 0] = 0
+        self.dots[dots_to_remove, 1] = 0
+        self.dots[dots_to_remove, 2] = 0
+        bonds_group = self.frame.bonds.group
+        bonds_indexes = list(range(len(bonds_group)))
+        bonds_indexes[:] = [
+            i for i in bonds_indexes
+            if not dots_to_remove[bonds_group[i][0]] and not dots_to_remove[bonds_group[i][1]]]
+        self.frame.bonds.group[:] = [bonds_group[i] for i in bonds_indexes]
+        self.frame.bonds.typeid[:] = [self.frame.bonds.typeid[i] for i in bonds_indexes]
+        self.frame.bonds.N = len(bonds_indexes)
+
+        dihedral_group = self.frame.dihedrals.group
+        dihedral_indexes = list(range(len(dihedral_group)))
+        dihedral_indexes[:] = [
+            i for i in dihedral_indexes
+            if not np.any(dots_to_remove[list(dihedral_group[i])])]
+        self.frame.dihedrals.group[:] = [dihedral_group[i] for i in dihedral_indexes]
+        self.frame.dihedrals.typeid[:] = [self.frame.dihedrals.typeid[i] for i in dihedral_indexes]
+        self.frame.dihedrals.N = len(dihedral_indexes)
 
     def add_SW_defect(self, i: int, j: int, should_fix_dihedral=True):
         if i <= 0 or i >= self.ny - 1 or j < 0 or j >= self.nx - 1:

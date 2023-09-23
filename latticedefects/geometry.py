@@ -115,6 +115,7 @@ def calculate_curvatures_by_interpolation(
     from origami.origamimetric import OrigamiGeometry
     import origami.origamimetric
     origami.origamimetric.skip_half_dots = False
+    origami.origamimetric.always_use_gradient = True
     quads = origami.quadranglearray.QuadrangleArray(quad_dots, y_samples, x_samples)
     geom = OrigamiGeometry(quads)
     Ks, Hs = geom.get_curvatures_by_shape_operator()

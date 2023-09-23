@@ -1,5 +1,8 @@
 import numpy as np
+import scipy
+from typing import Tuple
 
+from latticedefects import swdesign
 from latticedefects.latticegenerator import TriangularLatticeGenerator
 
 
@@ -55,3 +58,43 @@ def create_cone_by_inclusion(nx, ny, disk_width, factor, r0, padding, inclusion_
         angle += 2 * np.pi / defects_in_disk / 2
 
     return lattice_gen
+
+
+def get_distribution_by_curvature(Ks: np.ndarray) -> np.ndarray:
+    """
+    Use the green function to create the distribution of inclusion according
+    the Gaussian curvature given in Ks
+
+    :param Ks: 2D array with the desired Gaussian curvature
+    :return: 2D array with same shape
+    """
+    nx, ny = Ks.shape
+    nx, ny = 2 * nx + 1, 2 * ny + 1
+    xs = np.arange(nx) - (nx - 1) / 2
+    ys = (np.arange(ny) - (ny - 1) / 2) * np.sqrt(3) / 2
+    xs, ys = np.meshgrid(xs, ys)
+    rs = np.sqrt(xs ** 2 + ys ** 2)
+    eps = 0.01
+    green = np.log(rs + eps)
+    return scipy.signal.convolve2d(Ks, green, mode='same')
+
+
+def create_lattice_by_defects_map(defects_map: np.ndarray) -> TriangularLatticeGenerator:
+    ny, nx = defects_map.shape
+    lattice_gen = TriangularLatticeGenerator(nx, ny)
+
+    for j in range(0, nx):
+        for i in range(1, ny):
+            if defects_map[i, j] == 1:
+                lattice_gen.add_inclusion_defect(i, j)
+    return lattice_gen
+
+
+def create_defects_map_by_dist(
+        dist: np.ndarray, nx: int, reduce_factor: float = 1.0,
+        x_jumps=1, y_jumps=1, padding=(0, 0, 0, 0)) -> \
+        Tuple[np.ndarray, np.ndarray]:
+    return swdesign.create_defects_map_by_dist(
+        dist, nx, reduce_factor,
+        x_jumps=x_jumps, y_jumps=y_jumps,
+        padding=padding)

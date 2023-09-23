@@ -48,12 +48,16 @@ class Lattice(object):
 
     def do_relaxation(self, dt=0.05, force_tol=1e-6, angmom_tol=1e-2,
                       energy_tol=1e-10, iteration_time=1000,
-                      pre_iteration_hook: Optional[Callable] = None) -> hoomd.Snapshot:
+                      pre_iteration_hook: Optional[Callable] = None,
+                      fire_args=None) -> hoomd.Snapshot:
+        if fire_args is None:
+            fire_args = {}
+
         sim = self.sim
         harmonic = self.harmonic
         dihedrals = self.dihedrals
 
-        fire = md.minimize.FIRE(dt, force_tol, angmom_tol, energy_tol)
+        fire = md.minimize.FIRE(dt, force_tol, angmom_tol, energy_tol, **fire_args)
         fire.methods.append(md.methods.ConstantVolume(hoomd.filter.All()))
         sim.operations.integrator = fire
         fire.forces.append(harmonic)
@@ -64,6 +68,9 @@ class Lattice(object):
         while not fire.converged:
             E_stretching = harmonic.energy
             E_bending = dihedrals.energy
+            if np.isnan(E_stretching) or np.isnan(E_bending):
+                raise RuntimeError("Got nan for the energy. "
+                                   "This may happen if dt is too large, and there is overshooting")
             print("Fire iteration. "
                   f"E-stretch: {E_stretching:.6f}, E-bend: {E_bending:.6f}, "
                   f"E-total: {E_stretching + E_bending:.6f}")

@@ -128,7 +128,8 @@ def get_distribution_by_curvature(Ks: np.ndarray) -> np.ndarray:
 
 
 def create_defects_map_by_dist(
-        dist: np.ndarray, nx: int, reduce_factor: float = 0.9) -> \
+        dist: np.ndarray, nx: int, reduce_factor: float = 0.9,
+        x_jumps=2, y_jumps=2, padding=(0, 1, 1, 1)) -> \
         Tuple[np.ndarray, np.ndarray]:
     if np.any(dist < 0):
         raise ValueError("The given distribution has negative value!")
@@ -146,10 +147,9 @@ def create_defects_map_by_dist(
 
     defects_map = np.zeros((ny, nx))
     interp_vals = np.zeros((ny, nx))
-    x_jumps = 2
-    y_jumps = 2
-    for j in range(0, nx - 1, x_jumps):
-        for i in range(1, ny - 1, y_jumps):
+    left_pad, right_pad, bottom_pad, top_pad = padding
+    for j in range(left_pad, nx - right_pad, x_jumps):
+        for i in range(bottom_pad, ny - top_pad, y_jumps):
             x = j / factor
             y = i * y_x_factor / factor
             val = scipy.interpolate.interpn((dist_ys, dist_xs), dist, (y, x))[0]

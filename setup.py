@@ -6,6 +6,6 @@ setuptools.setup(
     author='Alon Sardas',
     author_email='alon.sardas@mail.huji.ac.il',
     packages=['latticedefects'],
-    install_requires=['numpy', 'matplotlib'],
+    install_requires=['numpy', 'matplotlib', 'scipy'],
     scripts=['latticedefects/defectsplot']
 )

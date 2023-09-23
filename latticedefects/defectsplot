@@ -42,7 +42,10 @@ def plot_func(args):
     if args.axis == 'equal':
         ax.set_aspect('equal')
 
-    plt.show()
+    try:
+        plt.show()
+    except KeyboardInterrupt:
+        print("Bye!")
 
 
 def plot_all_func(args):

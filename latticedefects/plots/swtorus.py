@@ -6,6 +6,8 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
 from latticedefects import swdesign, plots, geometry
+from latticedefects.swdesign import get_distribution_by_curvature
+from latticedefects.trajectory import load_trajectory
 from latticedefects.utils import plotutils
 from latticedefects.utils.plotutils import imshow_with_colorbar
 
@@ -279,8 +281,8 @@ def create_torus4():
     # plt.show()
 
     print("Calculating dist")
-    # dist = get_torus_dist_by_Ks(Ks, (50, 50))
-    dist = get_torus_dist_by_Ks(Ks, None)
+    dist = get_torus_dist_by_Ks(Ks, (30, 30))
+    # dist = get_torus_dist_by_Ks(Ks, None)
     dist -= dist.min()
 
     print("plot dist")
@@ -292,7 +294,7 @@ def create_torus4():
     dist[dist < threshold] = 0
     should_inverse_defects = False
     if should_inverse_defects:
-        dist = 1-dist
+        dist = 1 - dist
         traj_name = traj_name + '-inv'
 
     # increase_contrast(dist, 50)
@@ -308,7 +310,7 @@ def create_torus4():
     plotutils.imshow_with_colorbar(fig, axes[2], defects_map, 'defects')
     fig.savefig(os.path.join(folder, 'dist-and-defects-v4.png'))
 
-    # plt.show()
+    plt.show()
     print("Creating lattice")
     lattice_gen = swdesign.create_lattice_by_defects_map(defects_map)
     lattice_gen.set_dihedral_k(8)
@@ -319,15 +321,15 @@ def create_torus4():
 
     rs = np.sqrt(lattice_gen.dots[:, 0] ** 2 + lattice_gen.dots[:, 1] ** 2)
     r0 = r0 / nx * lattice_nx
-    Z0 = 0.2
+    Z0 = 2
     lattice_gen.dots[:, 2] = Z0 * (rs / r0) ** 2 * np.exp(-(rs / r0) ** 2)
     lattice_gen.dots[:, 0] *= 0.9
     lattice_gen.dots[:, 1] *= 0.9
 
     # lattice_gen.dots[:, 2] = zs.flatten()
-    with_hole = True
+    with_hole = False
     if with_hole:
-        lattice_gen.remove_dots_inside(5.0)
+        lattice_gen.remove_dots_inside(10)
         traj_name = traj_name + '-hole'
     traj_name = traj_name + '.gsd'
 
@@ -357,11 +359,108 @@ def create_torus4():
     # the defects appear only there...
 
 
+def create_torus5():
+    folder = FIGURE_PATH
+    traj_name = 'traj5c'
+
+    nx, ny = 150, 170
+    samples_x, samples_y = 80, 80
+
+    r0 = 40.0
+    Z0 = 20.0
+
+    xs = np.arange(nx) - (nx - 1) / 2
+    ys = (np.arange(ny) - (ny - 1) / 2) * np.sqrt(3) / 2
+    xs, ys = np.meshgrid(xs, ys)
+    rs = np.sqrt(xs ** 2 + ys ** 2)
+
+    zs = Z0 * (rs / r0) ** 2 * np.exp(-(rs / r0) ** 2)
+
+    fig: Figure = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection="3d")
+
+    ax.plot(xs.flat,
+            ys.flat,
+            zs.flat, ".", color='C0', alpha=0.8)
+
+    dots = np.array([xs.flat, ys.flat, zs.flat]).transpose()
+    print("Calculating the curvature")
+    Ks, Hs = geometry.calculate_curvatures_by_interpolation(
+        dots, samples_x, samples_y)
+
+    print("Plotting the desired curvature")
+    fig, ax = plt.subplots()
+    plotutils.imshow_with_colorbar(fig, ax, Ks, "desired Ks")
+
+    print("Calculating dist")
+    dist = get_torus_dist_by_Ks(Ks, None)
+    dist -= dist.min()
+
+    print("plot dist")
+    fig, axes = plt.subplots(1, 3)
+    plotutils.imshow_with_colorbar(fig, axes[0], dist, 'dist')
+
+    threshold = 0.048
+    dist[dist >= threshold] = 1
+    dist[dist < threshold] = 0
+
+    plotutils.imshow_with_colorbar(fig, axes[1], dist, 'dist - high contrast')
+
+    lattice_nx = 70
+    # For some reason, smaller factor makes the simulations reach faster to equilibrium
+    # reduce_factor = 0.6
+    reduce_factor = 1.0
+    print("Calculating defects map")
+    defects_map, _ = swdesign.create_defects_map_by_dist(dist, lattice_nx, reduce_factor)
+    plotutils.imshow_with_colorbar(fig, axes[2], defects_map, 'defects')
+    fig.savefig(os.path.join(folder, 'dist-and-defects-v5.png'))
+
+    # plt.show()
+    print("Creating lattice")
+    lattice_gen = swdesign.create_lattice_by_defects_map(defects_map)
+    lattice_gen.set_dihedral_k(0.3)
+    lattice_gen.set_spring_constant(1)
+    print("finished creating lattice")
+
+    print(f"expected length: {lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant()}")
+
+    rs = np.sqrt(lattice_gen.dots[:, 0] ** 2 + lattice_gen.dots[:, 1] ** 2)
+    r0 = r0 / nx * lattice_nx
+    Z0 = 18.0
+    lattice_gen.dots[:, 2] = Z0 * (rs / r0) ** 2 * np.exp(-(rs / r0) ** 2)
+    lattice_gen.dots[:, 0] *= 0.9
+    lattice_gen.dots[:, 1] *= 0.9
+
+    with_hole = True
+    if with_hole:
+        lattice_gen.remove_dots_inside(5.0)
+        traj_name = traj_name + '-hole'
+    traj_name = traj_name + '.gsd'
+
+    lattice_gen.remove_dots_outside(35)
+
+    lattice = lattice_gen.generate_lattice()
+    fig = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection='3d')
+    lattice.plot_dots(ax)
+
+    lattice.log_trajectory(os.path.join(folder, traj_name), 5000)
+    lattice.do_relaxation(dt=0.1, iteration_time=5000, energy_tol=1e-8, force_tol=1e-3)
+    print("finished 1st relaxation")
+    lattice.do_relaxation(dt=0.05, iteration_time=5000, energy_tol=1e-9)
+    # fire_args={'finc_dt': 1.10, 'min_steps_adapt': 5}
+    print("Done!!!")
+
+    # When dt is large ~ 0.15, it converges quite rapidly to a minimum - but this is not
+    # the minimum configuration that we want.
+    # When dt is smaller, the time to converge becomes very large,
+    # and sometimes there are fluctuations, that increase the total energy
+
+
 def get_torus_dist_by_Ks(Ks, green_func_box=None):
-    # Here we make the green function only to some small area
-    nx, ny = Ks.shape
     if green_func_box is None:
-        green_func_box = int(0.45 * nx), int(0.45 * ny)
+        return get_distribution_by_curvature(Ks)
+    # Here we make the green function only to some small area
     nx, ny = green_func_box
     b = np.zeros((ny, nx))
     xs = np.arange(nx)
@@ -492,8 +591,18 @@ def main():
     # create_torus3()
     # create_positive_K_on_annulus()
     # test_inverse_design()
-    create_torus4()
-    # create_torus5()
+    # create_torus4()
+    create_torus5()
+
+
+def continue_relaxation():
+    folder = FIGURE_PATH
+    file_path = os.path.join(folder, 'torus5-hole.gsd')
+
+    traj = load_trajectory(file_path)
+    # traj[0].
+    # Lattice
+
 
 
 if __name__ == '__main__':

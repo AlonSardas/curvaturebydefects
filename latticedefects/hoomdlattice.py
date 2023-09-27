@@ -11,6 +11,7 @@ import os.path
 import gsd.hoomd
 import hoomd
 import numpy as np
+import os
 from hoomd import md
 from mpl_toolkits.mplot3d import Axes3D
 from typing import Callable, Optional, Union
@@ -23,7 +24,17 @@ class Lattice(object):
         self.harmonic = harmonic
         self.dihedrals = dihedrals
 
-        sim = hoomd.Simulation(device=hoomd.device.CPU(), seed=1)
+        if 'HOOMD_DEVICE' in os.environ:
+            env_device = os.environ['HOOMD_DEVICE']
+            if env_device == 'GPU':
+                device = hoomd.device.GPU()
+            elif env_device == 'CPU':
+                device = hoomd.device.CPU()
+            else:
+                raise RuntimeError(f"Got an unknown request for device. HOOMD_DEVICE={env_device}")
+        else:
+            device = hoomd.device.CPU()
+        sim = hoomd.Simulation(device=device, seed=1)
         sim.create_state_from_snapshot(frame)
         self.sim = sim
 

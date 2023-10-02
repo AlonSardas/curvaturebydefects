@@ -415,7 +415,7 @@ def create_torus5():
     plotutils.imshow_with_colorbar(fig, axes[2], defects_map, 'defects')
     fig.savefig(os.path.join(folder, 'dist-and-defects-v5.png'))
 
-    # plt.show()
+    plt.show()
     print("Creating lattice")
     lattice_gen = swdesign.create_lattice_by_defects_map(defects_map)
     lattice_gen.set_dihedral_k(0.3)

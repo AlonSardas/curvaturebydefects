@@ -101,10 +101,38 @@ def test_inverse_ellipsoid():
     plt.show()
 
 
+def test_sphere_curvature():
+    nx, ny = 90, 90
+
+    R = 70
+    xs = np.arange(nx)
+    ys = np.arange(ny) * np.sqrt(3) / 2
+    xs, ys = np.meshgrid(xs, ys)
+    zs = np.sqrt(R**2-(xs-nx/2)**2-(ys-ny/2)**2)
+
+    fig: Figure = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection="3d")
+
+    ax.plot(xs.flat,
+            ys.flat,
+            zs.flat, ".", color='C0', alpha=0.8)
+    ax.set_aspect('equal')
+
+    dots = np.array([xs.flat, ys.flat, zs.flat]).transpose()
+    Ks, Hs = geometry.calculate_curvatures_by_interpolation(dots, 50, 50)
+
+    fig, axes = plt.subplots(1, 2)
+    plotutils.imshow_with_colorbar(fig, axes[0], Ks, f"Ks expected={1/R**2}")
+    plotutils.imshow_with_colorbar(fig, axes[1], Hs, f"Hs expected={1/R}")
+    plt.show()
+
+
+
 def main():
     # test_curvature_by_interpolation()
-    test_inverse_negative()
+    # test_inverse_negative()
     # test_inverse_ellipsoid()
+    test_sphere_curvature()
 
 
 if __name__ == '__main__':

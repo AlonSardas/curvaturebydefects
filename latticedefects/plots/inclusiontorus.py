@@ -20,7 +20,7 @@ def create_torus():
     samples_x, samples_y = 80, 80
 
     r0 = 40.0
-    Z0 = 180.0
+    Z0 = 0.2
 
     xs = np.arange(nx) - (nx - 1) / 2
     ys = (np.arange(ny) - (ny - 1) / 2) * np.sqrt(3) / 2
@@ -53,7 +53,7 @@ def create_torus():
     fig, axes = plt.subplots(1, 2)
     plotutils.imshow_with_colorbar(fig, axes[0], dist, 'dist')
 
-    lattice_nx = 70
+    lattice_nx = 50
     # For some reason, smaller factor makes the simulations reach faster to equilibrium
     reduce_factor = 0.1
     # reduce_factor = 1.0
@@ -164,10 +164,63 @@ def test_green():
     plt.show()
 
 
+def test_constant():
+    folder = FIGURE_PATH
+    traj_name = 'constant-test'
+
+    Ks = np.ones((150, 150))
+
+    print("Plotting the desired curvature")
+    fig, ax = plt.subplots()
+    plotutils.imshow_with_colorbar(fig, ax, Ks, "desired Ks")
+
+    print("Calculating dist")
+    dist = get_distribution_by_curvature(Ks)
+    dist -= dist.min()
+    # dist -= dist.mean() / 2
+    # dist[dist < 0] = 0
+
+    print("plot dist")
+    fig, axes = plt.subplots(1, 2)
+    plotutils.imshow_with_colorbar(fig, axes[0], dist, 'dist')
+
+    lattice_nx = 70
+    reduce_factor = 0.1
+    print("Calculating defects map")
+    defects_map, _ = inclusiondesign.create_defects_map_by_dist(
+        dist, lattice_nx, reduce_factor)
+    plotutils.imshow_with_colorbar(fig, axes[1], defects_map, 'defects')
+
+    plt.show()
+
+    print("Creating lattice")
+    lattice_gen = inclusiondesign.create_lattice_by_defects_map(defects_map)
+    # lattice_gen.set_inclusion_d(0.7)
+    lattice_gen.set_dihedral_k(8)
+    lattice_gen.set_spring_constant(1)
+    print("finished creating lattice")
+
+    print(f"expected length: {lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant()}")
+    # lattice_gen.set_z_to_sphere(100000)
+    lattice_gen.set_z_to_noise()
+
+    traj_name = traj_name + '.gsd'
+
+    lattice = lattice_gen.generate_lattice()
+    fig = plt.figure()
+    ax: Axes3D = fig.add_subplot(111, projection='3d')
+    lattice.plot_dots(ax)
+
+    lattice.log_trajectory(os.path.join(folder, traj_name), 5000)
+    lattice.do_relaxation(dt=0.05, iteration_time=5000)
+    print("Done!!!")
+
+
 def main():
-    create_torus()
+    # create_torus()
     # test_green()
     # test_cone()
+    test_constant()
 
 
 if __name__ == '__main__':

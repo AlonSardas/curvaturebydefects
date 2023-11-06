@@ -415,7 +415,7 @@ def create_torus5():
     plotutils.imshow_with_colorbar(fig, axes[2], defects_map, 'defects')
     fig.savefig(os.path.join(folder, 'dist-and-defects-v5.png'))
 
-    plt.show()
+    # plt.show()
     print("Creating lattice")
     lattice_gen = swdesign.create_lattice_by_defects_map(defects_map)
     lattice_gen.set_dihedral_k(0.3)
@@ -444,10 +444,10 @@ def create_torus5():
     ax: Axes3D = fig.add_subplot(111, projection='3d')
     lattice.plot_dots(ax)
 
-    lattice.log_trajectory(os.path.join(folder, traj_name), 5000)
+    lattice.log_trajectory(os.path.join(folder, traj_name), 25000)
     lattice.do_relaxation(dt=0.1, iteration_time=5000, energy_tol=1e-8, force_tol=1e-3)
     print("finished 1st relaxation")
-    lattice.do_relaxation(dt=0.05, iteration_time=5000, energy_tol=1e-9)
+    lattice.do_relaxation(dt=0.1, iteration_time=25000, energy_tol=1e-9)
     # fire_args={'finc_dt': 1.10, 'min_steps_adapt': 5}
     print("Done!!!")
 

@@ -156,7 +156,7 @@ def create_defects_map_by_dist(
         for i in range(bottom_pad, ny - top_pad, y_jumps):
             x = j / factor
             y = i * y_x_factor / factor
-            print(x,y)
+            # print(x,y)
             val = scipy.interpolate.interpn((dist_ys, dist_xs), dist, (y, x))[0]
             r = np.random.random()
             interp_vals[i, j] = val

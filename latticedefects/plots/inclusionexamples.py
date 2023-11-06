@@ -66,7 +66,7 @@ def cone_by_inclusions():
     lattice_gen = create_cone_by_inclusion(nx, ny, disk_width, factor, r0, padding)
     lattice_gen.set_inclusion_d(0.7)
     lattice_gen.set_dihedral_k(3.0)
-    plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial'), 15, plot='dots')
+    plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial'), 15, plot='dots', with_axes=False)
 
     # lattice_gen.set_inclusion_d(inclusion_d)
     lattice_gen.set_z_to_sphere(1000)
@@ -79,6 +79,7 @@ def cone_by_inclusions():
     plotutils.set_axis_scaled(ax)
     ax.set_zlim(-3, 3)
     fig.savefig(os.path.join(folder, 'cone-final.png'))
+    fig.savefig(os.path.join(folder, 'cone-final.pdf'))
 
     fig, ax = plt.subplots()
     Ks, Hs = calculate_curvatures_by_interpolation(lattice.get_dots())

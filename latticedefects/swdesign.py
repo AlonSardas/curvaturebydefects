@@ -139,8 +139,9 @@ def create_defects_map_by_dist(
     dist *= reduce_factor  # to have maximum value smaller than 1
     dist_ny, dist_nx = dist.shape
     y_x_factor = np.sqrt(3) / 2
-    factor = nx / dist.shape[1]
-    ny = math.floor(dist_ny / dist_nx * nx / y_x_factor)
+    factor = nx / dist_nx
+    ny = math.floor(dist_ny * factor / y_x_factor)
+
 
     dist_xs = np.arange(dist_nx)
     dist_ys = np.arange(dist_ny)
@@ -148,10 +149,14 @@ def create_defects_map_by_dist(
     defects_map = np.zeros((ny, nx))
     interp_vals = np.zeros((ny, nx))
     left_pad, right_pad, bottom_pad, top_pad = padding
+
+    print(nx, ny, dist.shape, factor, (ny-top_pad-1)*y_x_factor/factor)
+
     for j in range(left_pad, nx - right_pad, x_jumps):
         for i in range(bottom_pad, ny - top_pad, y_jumps):
             x = j / factor
             y = i * y_x_factor / factor
+            print(x,y)
             val = scipy.interpolate.interpn((dist_ys, dist_xs), dist, (y, x))[0]
             r = np.random.random()
             interp_vals[i, j] = val

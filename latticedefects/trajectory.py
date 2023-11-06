@@ -58,38 +58,39 @@ def plot_all_frames(frames: Sequence[Frame]):
 
     dots_plot = plot_dots(ax, frames[0].frame)
 
-    # Make a horizontal slider
-    frames_slider_ax = fig.add_axes([0.2, 0.05, 0.5, 0.03])
+    frames_slider = None
+    if len(frames) >= 2:
+        # Make a horizontal slider
+        frames_slider_ax = fig.add_axes([0.2, 0.05, 0.5, 0.03])
+        frames_slider = matplotlib.widgets.Slider(
+            ax=frames_slider_ax,
+            label='frame index',
+            valmin=0,
+            valmax=len(frames) - 1,
+            valstep=1,
+            valinit=0,
+        )
+
+        def update_frame(frame_index):
+            frame = frames[frame_index]
+            dots = frame.frame.particles.position
+            dots_plot.set_data_3d(dots[:, 0], dots[:, 1], dots[:, 2])
+            ax.auto_scale_xyz(dots[:, 0], dots[:, 1], dots[:, 2])
+            E_s = frame.harmonic_energy
+            E_b = frame.dihedrals_energy
+            E_tot = E_s + E_b
+            ax.set_title(f'$E_S$ = {E_s:.6f};\t'
+                        f'$E_B$ = {E_b:.6f};\t'
+                        '$E_{tot}$' f' = {E_tot:.6f}')
+            fig.canvas.draw_idle()
+
+        frames_slider.on_changed(update_frame)
+
     curvature_button_ax = fig.add_axes([0.75, 0.05, 0.15, 0.08])
-
-    frames_slider = matplotlib.widgets.Slider(
-        ax=frames_slider_ax,
-        label='frame index',
-        valmin=0,
-        valmax=len(frames) - 1,
-        valstep=1,
-        valinit=0,
-    )
-
-    def update_frame(frame_index):
-        frame = frames[frame_index]
-        dots = frame.frame.particles.position
-        dots_plot.set_data_3d(dots[:, 0], dots[:, 1], dots[:, 2])
-        ax.auto_scale_xyz(dots[:, 0], dots[:, 1], dots[:, 2])
-        E_s = frame.harmonic_energy
-        E_b = frame.dihedrals_energy
-        E_tot = E_s + E_b
-        ax.set_title(f'$E_S$ = {E_s:.6f};\t'
-                     f'$E_B$ = {E_b:.6f};\t'
-                     '$E_{tot}$' f' = {E_tot:.6f}')
-        fig.canvas.draw_idle()
-
-    frames_slider.on_changed(update_frame)
-
     button = Button(curvature_button_ax, 'Curvature', hovercolor='0.975')
 
     def plot_curvature_event(event):
-        frame_index = frames_slider.val
+        frame_index = frames_slider.val if frames_slider else 0
         frame = frames[frame_index]
         dots = frame.frame.particles.position
         Ks, Hs = geometry.calculate_curvatures_by_interpolation(dots)

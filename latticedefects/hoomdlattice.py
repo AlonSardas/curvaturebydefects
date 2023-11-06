@@ -89,6 +89,10 @@ class Lattice(object):
                 pre_iteration_hook()
             sim.run(iteration_time)
 
+        for writer in sim.operations.writers:
+            if hasattr(writer, 'flush'):
+                writer.flush()
+
         return sim.state.get_snapshot()
 
     def save_frame(self, filepath):
@@ -156,15 +160,16 @@ def plot_bonds(ax: Axes3D,
         p1, p2 = bond
 
         color = 'C9'
+        zorder = 0
         if snapshot.bonds.typeid[i] == 2:
             color = 'r'
+            zorder = 1
 
         ax.plot(
             [dots[p1, 0], dots[p2, 0]],
             [dots[p1, 1], dots[p2, 1]],
             [dots[p1, 2], dots[p2, 2]],
-            "-", color=color, alpha=0.8
-        )
+            "-", color=color, alpha=0.8, zorder=zorder)
 
 
 def plot_dots_indexes(ax: Axes3D, snapshot: Union[hoomd.Snapshot, gsd.hoomd.Frame]):

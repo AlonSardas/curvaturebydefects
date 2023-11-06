@@ -9,7 +9,9 @@ from latticedefects import plots
 from latticedefects.hoomdlattice import do_relaxation
 from latticedefects.latticegenerator import TriangularLatticeGenerator
 from latticedefects.geometry import calc_metric_curvature_triangular_lattice
+from latticedefects.plots.latticeplotutils import plot_flat_and_save
 from latticedefects.swdesign import create_lattice_for_sphere_by_traceless_quadrupoles, create_cone_by_sw
+from latticedefects.trajectory import load_trajectory
 from latticedefects.utils import plotutils
 
 FIGURE_PATH = os.path.join(plots.BASE_PATH, "MD-simulations")
@@ -17,33 +19,43 @@ FIGURE_PATH = os.path.join(plots.BASE_PATH, "MD-simulations")
 
 def cone_by_traceless_quadrupoles():
     folder = os.path.join(FIGURE_PATH, 'cone-by-SW')
+    traj_path = os.path.join(folder, 'trajectory.gsd')
 
-    nx, ny = 58, 58
-    defects_jumps = 5
-    padding = 0
-    lattice_gen = create_cone_by_sw(nx, ny, defects_jumps, padding)
+    should_simulate = True
+    if should_simulate:
+        nx, ny = 54, 55
+        defects_jumps = 4
+        padding = 0
+        lattice_gen = create_cone_by_sw(nx, ny, defects_jumps, padding)
 
-    lattice_gen.set_dihedral_k(3.0)
+        lattice_gen.set_dihedral_k(2.0)
+        print(f"k={lattice_gen.get_spring_constant()}, kappa={lattice_gen.get_dihedral_k()}")
 
-    # plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial'), 15)
+        plot_flat_and_save(lattice_gen, os.path.join(folder, 'initial'), 20, with_axes=False)
 
-    lattice_gen.set_z_to_sphere(radius=1000)
+        lattice_gen.set_z_to_sphere(radius=1000)
 
-    lattice = lattice_gen.generate_lattice()
-    lattice.log_trajectory(os.path.join(folder, 'trajectory.gsd'), 200)
-    snapshot = lattice.do_relaxation(force_tol=1e-7)
+        lattice = lattice_gen.generate_lattice()
+        lattice.log_trajectory(traj_path, 200)
+        snapshot = lattice.do_relaxation(force_tol=1e-7)
 
+    frame = load_trajectory(traj_path)[-1]
     fig: Figure = plt.figure()
     ax: Axes3D = fig.add_subplot(111, projection="3d")
-    lattice.plot_dots(ax)
-    # lattice.plot_bonds(ax)
+    # lattice.plot_dots(ax)
+    frame.plot_bonds(ax)
     ax.set_zlim(-5, 5)
+    fig.savefig(os.path.join(folder, 'sw-cone.pdf'))
+    fig.savefig(os.path.join(folder, 'sw-cone.png'))
+    plt.show()
 
-    fig, ax = plt.subplots()
-    Ks, g11, g12, g22 = calc_metric_curvature_triangular_lattice(
-        snapshot.particles.position, nx, ny
-    )
-    plotutils.imshow_with_colorbar(fig, ax, Ks, "K")
+    should_calc_curvature = False
+    if should_calc_curvature:
+        fig, ax = plt.subplots()
+        Ks, g11, g12, g22 = calc_metric_curvature_triangular_lattice(
+            snapshot.particles.position, nx, ny
+        )
+        plotutils.imshow_with_colorbar(fig, ax, Ks, "K")
 
     plt.show()
 
@@ -137,7 +149,7 @@ def analyze_single_SW_displacement():
     axes[3].plot(dy_vs_y, '.')
 
     import origami.utils.fitter as fitter
-    func = lambda x, a, b: a / x + b * x
+    def func(x, a, b): return a / x + b * x
     params = fitter.FitParams(func, 1 + np.arange(len(dx_vs_x)), dx_vs_x)
     fit = fitter.FuncFit(params)
     axes[0].set_xlim(0)
@@ -247,15 +259,14 @@ def plot_single_inclusion():
     plt.show()
 
 
-
 def main():
-    # cone_by_traceless_quadrupoles()
+    cone_by_traceless_quadrupoles()
     # sphere_by_traceless_quadrupoles()
     # plot_sphere_by_traceless_quadrupoles()
     # sphere_by_inclusions()
     # analyze_single_SW_displacement()
     # plot_single_SW()
-    plot_single_inclusion()
+    # plot_single_inclusion()
 
 
 if __name__ == "__main__":

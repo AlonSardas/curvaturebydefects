@@ -53,7 +53,7 @@ def create_torus():
     fig, axes = plt.subplots(1, 2)
     plotutils.imshow_with_colorbar(fig, axes[0], dist, 'dist')
 
-    lattice_nx = 50
+    lattice_nx = 120
     # For some reason, smaller factor makes the simulations reach faster to equilibrium
     reduce_factor = 0.1
     # reduce_factor = 1.0
@@ -217,10 +217,10 @@ def test_constant():
 
 
 def main():
-    # create_torus()
+    create_torus()
     # test_green()
     # test_cone()
-    test_constant()
+    # test_constant()
 
 
 if __name__ == '__main__':

@@ -17,7 +17,7 @@ def create_fig_and_plot_dots(lattice: Lattice, azim, elev):
 
 
 def plot_flat_and_save(lattice_gen, filename,
-                       box_size: Optional[float] = None, plot='bonds'):
+                       box_size: Optional[float] = None, plot='bonds', with_axes=False):
     fig = plt.figure()
     ax: Axes3D = fig.add_subplot(111, projection='3d', azim=-90, elev=90)
     lattice = lattice_gen.generate_lattice()
@@ -28,6 +28,9 @@ def plot_flat_and_save(lattice_gen, filename,
     if box_size:
         ax.set_xlim(-box_size, box_size)
         ax.set_ylim(-box_size, box_size)
+    if not with_axes:
+        ax.set_axis_off()
     fig.savefig(filename + '.svg')
+    fig.savefig(filename + '.pdf')
     fig.savefig(filename + '.png')
     lattice.save_frame(filename + '.gsd')

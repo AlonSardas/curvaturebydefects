@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-import latticedefects.plots.latticeplotutils
 from latticedefects.trajectory import load_trajectory, plot_all_frames
 from latticedefects.utils import plotutils
 

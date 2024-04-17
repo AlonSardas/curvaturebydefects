@@ -220,7 +220,7 @@ def create_torus3():
     lattice_gen = swdesign.create_lattice_by_defects_map(defects_map)
     print("finished creating lattice")
 
-    print(f"expected length: {lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant()}")
+    print(f"expected length: {np.sqrt(lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant())}")
 
     r0 = 10
     lattice_gen.set_z_to_sphere()
@@ -317,7 +317,7 @@ def create_torus4():
     lattice_gen.set_spring_constant(1)
     print("finished creating lattice")
 
-    print(f"expected length: {lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant()}")
+    print(f"expected length: {np.sqrt(lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant())}")
 
     rs = np.sqrt(lattice_gen.dots[:, 0] ** 2 + lattice_gen.dots[:, 1] ** 2)
     r0 = r0 / nx * lattice_nx
@@ -422,7 +422,7 @@ def create_torus5():
     lattice_gen.set_spring_constant(1)
     print("finished creating lattice")
 
-    print(f"expected length: {lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant()}")
+    print(f"expected length: {np.sqrt(lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant())}")
 
     rs = np.sqrt(lattice_gen.dots[:, 0] ** 2 + lattice_gen.dots[:, 1] ** 2)
     r0 = r0 / nx * lattice_nx

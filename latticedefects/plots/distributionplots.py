@@ -177,7 +177,7 @@ def density_plot_by_random_scatter(ax, x_lim, y_lim, density_func: Callable, dot
             raise RuntimeError(f"Found invalid density {density}")
         should_plot = np.random.random() < density
         if should_plot:
-            ax.plot(x, y, '.b')
+            ax.plot(x, y)
 
 
 def _plot_dislocation(ax: Axes, x, y, angle, line_length: float = 0.2):

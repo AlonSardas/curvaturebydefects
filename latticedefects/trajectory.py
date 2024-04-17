@@ -25,8 +25,7 @@ class Frame(object):
         return self.frame.particles.position
 
     def plot_dots(self, ax: Axes3D):
-        dots = self.frame.particles.position
-        ax.plot(dots[:, 0], dots[:, 1], dots[:, 2], ".", color='C0', alpha=0.8)
+        plot_dots(ax, self.frame)
 
     def plot_bonds(self, ax: Axes3D):
         plot_bonds(ax, self.frame)

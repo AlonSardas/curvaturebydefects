@@ -48,10 +48,21 @@ def create_torus():
     print("Calculating dist")
     dist = get_distribution_by_curvature(Ks)
     dist -= dist.min()
+    dist /= dist.max()
 
     print("plot dist")
-    fig, axes = plt.subplots(1, 2)
+    fig, axes = plt.subplots(1, 3)
     plotutils.imshow_with_colorbar(fig, axes[0], dist, 'dist')
+
+    bins = np.array([0.01, 0.2, 0.5, 0.87, 1.01])
+    idx = np.digitize(dist, bins)
+    print(idx)
+    dist_high_contrast = bins[idx]
+    # dist_high_contrast = dist
+    plotutils.imshow_with_colorbar(fig, axes[1], dist_high_contrast, 'dist - high contrast')
+    plt.show()
+
+    # dist = dist_high_contrast
 
     lattice_nx = 120
     # For some reason, smaller factor makes the simulations reach faster to equilibrium
@@ -60,10 +71,11 @@ def create_torus():
     print("Calculating defects map")
     defects_map, _ = inclusiondesign.create_defects_map_by_dist(
         dist, lattice_nx, reduce_factor, padding=(0, 1, 2, 2))
-    plotutils.imshow_with_colorbar(fig, axes[1], defects_map, 'defects')
+    plotutils.imshow_with_colorbar(fig, axes[2], defects_map, 'defects')
     fig.savefig(os.path.join(folder, 'dist-and-defects.png'))
 
     plt.show()
+    return
 
     print("Creating lattice")
     lattice_gen = inclusiondesign.create_lattice_by_defects_map(defects_map)
@@ -72,7 +84,7 @@ def create_torus():
     lattice_gen.set_spring_constant(20)
     print("finished creating lattice")
 
-    print(f"expected length: {lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant()}")
+    print(f"expected length: {np.sqrt(lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant())}")
 
     rs = np.sqrt(lattice_gen.dots[:, 0] ** 2 + lattice_gen.dots[:, 1] ** 2)
     r0 = r0 / nx * lattice_nx
@@ -135,7 +147,7 @@ def test_cone():
     lattice_gen.set_spring_constant(1)
     print("finished creating lattice")
 
-    print(f"expected length: {lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant()}")
+    print(f"expected length: {np.sqrt(lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant())}")
     lattice_gen.set_z_to_sphere(100000)
 
     traj_name = traj_name + '.gsd'
@@ -200,7 +212,7 @@ def test_constant():
     lattice_gen.set_spring_constant(20)
     print("finished creating lattice")
 
-    print(f"expected length: {lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant()}")
+    print(f"expected length: {np.sqrt(lattice_gen.get_dihedral_k() / lattice_gen.get_spring_constant())}")
     # lattice_gen.set_z_to_sphere(100000)
     lattice_gen.set_z_to_noise()
 

@@ -42,6 +42,7 @@ def sphere_by_inclusions():
         plotutils.set_axis_scaled(ax)
         ax.set_zlim(-5, 5)
         fig.savefig(os.path.join(folder, name + '-final.svg'))
+        fig.savefig(os.path.join(folder, name + '-final.pdf'))
         fig.savefig(os.path.join(folder, name + '-final.png'))
 
         fig, ax = plt.subplots()
@@ -89,8 +90,8 @@ def cone_by_inclusions():
 
 
 def main():
-    # sphere_by_inclusions()
-    cone_by_inclusions()
+    sphere_by_inclusions()
+    # cone_by_inclusions()
 
 
 if __name__ == '__main__':

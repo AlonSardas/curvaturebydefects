@@ -3,10 +3,39 @@
 Simulating molecular dynamics using [HOOMD-blue](https://hoomd-blue.readthedocs.io/) 
 to see how the distribution of defects on a lattice changes its Gaussian curvature.
 
-<p style="text-align:center">
-<img src="./images/sphere-by-traceless-Q-config.png" alt="flat-config" width="200">
-<img src="./images/sphere-by-traceless-Q.png" alt="curved-config" width="200">
-</p>
+<table>
+  <tr>
+    <td>
+      <img src="./images/sphere-by-sw-config.png" alt="Stone-Wales defects, flat configuration" width="300">
+      <p>Stone-Wales defects (marked as red lines) on a 2D triangular lattice</p>
+    </td>
+    <td>
+      <img src="./images/sphere-by-sw.png" alt="Stone-Wales defects, spherical cap" width="300">
+      <p>Relaxed configuration</p>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="./images/sw-cone.png" alt="Stone-Wales defects, conic shape" width="300">
+      <p>Stone-Wales defects that create conic shape in the relaxed configuration</p>
+    </td>
+    <td>
+      <img src="./images/cone-final.png" alt="Doping defects, conic shape" width="300">
+      <p>Doping defects (local shrinkage) in a conic configuration</p>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="./images/inclusions-shrink.png" alt="Doping defects, spherical cap shape" width="300">
+      <p>Doping defects (local shrinkage) that create a spherical cap in the relaxed configuration</p>
+    </td>
+    <td>
+      <img src="./images/inclusions-growth.png" alt="Doping defects, constant negative Gaussian curvature" width="300">
+      <p>Doping defects (local growth) that create constant negative Gaussian curvature</p>
+    </td>
+  </tr>
+</table>
+
 
 ## Installation
 To run the code, the following packages must be installed:
